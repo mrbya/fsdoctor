@@ -1,3 +1,12 @@
+# IDEs
+/.idea
+/.vs
+/.vscode
+/.nvim
+/.cache
+/.claude
+
+# Build artefacts and misc files
 .DS_Store
 node_modules
 /build
@@ -8,3 +17,13 @@ node_modules
 !.env.example
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+/target
+**/*/target
+/src-tauri/target
+
+# Docs
+/docs-page
+/public
+
+*storybook.log
+storybook-static

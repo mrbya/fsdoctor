@@ -1,25 +1,54 @@
-[package]
-name = "fsdoctor"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-edition = "2021"
+[workspace]
+members = [
+    "./",
+    "crates/fsdoctor-core",
+]
+resolver = "2"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace.package]
+version                 = "0.1.0"
+description             = "A cross-platform backup/file-share integrity checker"
+authors                 = ["mrbya <v.toth.svk2@gmail.com>"]
+edition                 = "2021"
+license                 = "MIT"
+
+[package]
+name                    = "fsdoctor"
+version.workspace       = true
+description.workspace   = true
+authors.workspace       = true
+edition.workspace       = true
+license.workspace       = true
+
+[workspace.dependencies]
+# Build
+tauri-build             = { version = "2", features = [] }
+# Internal crates
+fsdoctor-core           = { path = "crates/fsdoctor-core" }
+# Runtime
+tauri                   = { version = "2", features = [] }
+tauri-plugin-opener     = { version = "2" }
+serde                   = { version = "1", features = ["derive"] }
+serde_json              = { version = "1" }
+# Dev
+criterion               = { version = "0.8" }
+pretty_assertions       = { version = "1" }
 
 [lib]
-# The `_lib` suffix may seem redundant but it is necessary
-# to make the lib name unique and wouldn't conflict with the bin name.
-# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "fsdoctor_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build.workspace = true
 
 [dependencies]
-tauri = { version = "2", features = [] }
-tauri-plugin-opener = "2"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+tauri.workspace = true
+tauri-plugin-opener.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 
+[package.metadata.cargo-udeps.ignore]
+normal = [
+    "fsdoctor-core"
+]
+development = ["criterion", "pretty_assertions"]

@@ -1,4 +1,14 @@
-//! `FSDoctor` application backend
+//! `FSDoctor` core
+//!
+//! Responsibilities:
+//! - filesystem walking
+//! - BLAKE3 hashing
+//! - `SQLite` project database
+//! - manifest generation
+//! - integrity checking
+//! - report generation
+//! - CSV export
+//! - future parity abstraction
 
 #![allow(clippy::module_name_repetitions)]
 // clippy WARN level lints
@@ -58,31 +68,7 @@
     clippy::verbose_file_reads
 )]
 
-/// App tauri command definitions.
-pub mod commands;
-
-/// Builds and runs Tauri application.
-///
-/// # Panics
-///
-/// Pnics if:
-/// - the Tauri runtime encounters an unrecoverable error during startup (e.g. the
-///   `WebView` cannot be created).
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![commands::greet])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn placeholder_test() {
-        let mut x = 11_u8;
-        x = x.saturating_add(1);
-        assert_eq!(x, 12);
-    }
+/// Stub fn
+pub fn stub() {
+    println!("Hello from FSDoctor core");
 }

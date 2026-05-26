@@ -1,0 +1,12 @@
+[package]
+name                    = "fsdoctor-core"
+description             = "FSDoctor core functionality"
+version.workspace       = true
+authors.workspace       = true
+edition.workspace       = true
+license.workspace       = true
+
+[dependencies]
+
+[package.metadata.cargo-udeps.ignore]
+development = ["criterion", "pretty_assertions"]
