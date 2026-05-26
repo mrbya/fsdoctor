@@ -1,0 +1,17 @@
+[book]
+authors = ["mrbya", "Viktor Toth"]
+language = "en"
+src = "src"
+title = "FSDoctor Book"
+description = "User and developer documentation for FSDoctor."
+
+[build]
+build-dir = "../../docs-page"
+create-missing = false
+
+[output.html]
+default-theme = "navy"
+preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/mrbya/fsdoctor"
+edit-url-template = "https://github.com/mrbya/fsdoctor/edit/master/docs/book/{path}"
+site-url = "/fsdoctor/"

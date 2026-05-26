@@ -5,7 +5,7 @@
   ],
   "entryPointStrategy": "expand",
   "tsconfig": "tsconfig.json",
-  "out": "dev-docs/frontend-api",
+  "out": "docs-page/dev/frontend-api",
   "readme": "docs/dev/frontend-api/index.md",
   // "projectDocuments": ["docs/dev/frontend-api/guides/*.md"],
   "searchInDocuments": true,

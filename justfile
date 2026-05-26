@@ -161,7 +161,17 @@ index:
 # Generates dev docs for rs sources.
 [working-directory: 'src-tauri']
 docs-rs *FLAGS:
-    RUSTDOCFLAGS="--default-theme ayu" cargo doc --no-deps --all-features --document-private-items --workspace {{FLAGS}}
+    #!/usr/bin/env bash
+    set -euo pipefail
+    RUSTDOCFLAGS="--default-theme ayu" cargo doc \
+        --no-deps \
+        --all-features \
+        --document-private-items \
+        --workspace \
+        {{FLAGS}}
+    rm -rf ../docs-page/dev/backend-rustdoc
+    mkdir -p ../docs-page/dev/backend-rustdoc
+    cp -R ./target/doc/. ../docs-page/dev/backend-rustdoc/
 
 # Generates dev docs for frontend API.
 docs-api:
@@ -171,28 +181,21 @@ docs-api:
 docs-ui:
     pnpm docs:ui
 
-# Cleans generated dev docs.
-docs-dev-clean:
-    rm -rf dev-docs
-
 # Cleans generated project docs.
 docs-clean:
-    rm -rf public
+    rm -rf docs-page
 
 # Generates FSDoctor book.
-docs:
+docs-book:
     mdbook build docs/book
 
-# Serve FSDoctor book locally.
-docs-serve:
-    mdbook serve docs/book --open
-
 # Generates full project documentation (rs, ui and api dev docs + book)
-docs-all:
+docs:
+    @just docs-clean
+    @just docs-book
     @just docs-rs
     @just docs-api
     @just docs-ui
-    @just docs
 
 # Runs and opens generated project docs in a http server.
 docs-show:
@@ -202,6 +205,7 @@ docs-show:
     fi
     pnpm docs:show
 
+# Recipe to generate docs in a gitlab pipeline.
 ci-docs:
     @just deps-ci
     @just check
