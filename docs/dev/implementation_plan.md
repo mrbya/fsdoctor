@@ -200,12 +200,12 @@ Lock down the MVP behavior, project boundaries, data model assumptions, and user
 
 ### Acceptance criteria
 
-- [ ] MVP scope is documented and explicitly excludes PAR2/repair.
-- [ ] Result kinds are documented with user-facing meaning.
-- [ ] Project DB lifecycle is documented: create, open, update, scan history.
-- [ ] Path policy is documented, including Windows-specific behavior.
-- [ ] UI vocabulary avoids exposing unnecessary implementation details.
-- [ ] The project has a written rule that the core crate must not depend on Tauri.
+- [x] MVP scope is documented and explicitly excludes PAR2/repair.
+- [x] Result kinds are documented with user-facing meaning.
+- [x] Project DB lifecycle is documented: create, open, update, scan history.
+- [x] Path policy is documented, including Windows-specific behavior.
+- [x] UI vocabulary avoids exposing unnecessary implementation details.
+- [x] The project has a written rule that the core crate must not depend on Tauri.
 
 ---
 
