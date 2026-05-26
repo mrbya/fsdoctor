@@ -19,3 +19,4 @@
 - [UI and UX guidelines](./development/ui-and-ux-guidelines.md)
 - [Quality gates](./development/quality-gates.md)
 - [Documentation](./development/documentation.md)
+- [Generated dev docs](./development/generated-dev-docs.md)
