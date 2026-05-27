@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::str::FromStr;
 
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
 use sqlx::Row;
@@ -206,7 +205,7 @@ impl ProjectDb {
             .fetch_one(&self.pool)
             .await?;
 
-        if count > 1 {
+        if count != 1 {
             return Err(Error::UnsupportedProjectCount { count });
         }
 
@@ -216,10 +215,8 @@ impl ProjectDb {
 
 /// Opens `SQLite` db connection pool.
 async fn connect_sqlite(path: &Path, create_if_missing: bool) -> Result<SqlitePool> {
-    let path_text = path_to_db_text(path)?;
-    let database_url = format!("sqlite://{path_text}");
-
-    let options = SqliteConnectOptions::from_str(&database_url)?
+    let options = SqliteConnectOptions::new()
+        .filename(path)
         .create_if_missing(create_if_missing)
         .journal_mode(SqliteJournalMode::Wal)
         .foreign_keys(true);
