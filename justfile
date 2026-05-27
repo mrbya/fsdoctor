@@ -147,12 +147,20 @@ clean:
     @just clean-js
     @just clean-rs
 
+# A thorough frontend source check ran before running commits and ci-builds.
+thorough-check-js:
+    @just fmt-js-check
+    @just check-js
+
+# A thorough rs backend source check ran before running commits and ci-builds.
+thorough-check-rs:
+    @just fmt-rs --check
+    @just check-rs -- -D warnings
+
 # A thorough codebase check ran before running ci-builds.
 thorough-check:
-    @just fmt-js-check
-    @just fmt-rs --check
-    @just check-js
-    @just check-rs -- -D warnings
+    @just thorough-check-js
+    @just thorough-check-rs
 
 # Indexes README.
 index:
@@ -212,19 +220,27 @@ ci-docs:
     @just docs
     mv ./docs-page ./public
 
-# Non mutating pre-commit recipe for pre commit hooks.
-pre-commit-hook:
+# Non mutating pre-commit recipe for frontend source pre commit hooks.
+pre-commit-js:
+    @just thorough-check-js
+    @just unused-js
+    @just audit-js
+    @just test-js
+
+# Non mutating pre-commit recipe for backend source pre commit hooks.
+pre-commit-rs:
     # @just precache
-    @just thorough-check
-    @just unused
-    @just audit
-    @just test
-    @just index
+    @just thorough-check-rs
+    @just unused-rs
+    @just audit-rs
+    @just test-rs
 
 # Runs formating, tests and checks necessary before a commit.
 pre-commit:
     @just fmt
-    @just pre-commit-hook
+    @just pre-commit-js
+    @just pre-commit-rs
+    @just index
 
 # Runs checks and tests run by ci.
 ci-test:
