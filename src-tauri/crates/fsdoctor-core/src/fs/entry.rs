@@ -1,3 +1,7 @@
+use std::path::PathBuf;
+
+use crate::RelativePath;
+
 /// Filesystem entry kind recognized by `FSDoctor`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FsEntryKind {
@@ -44,4 +48,39 @@ pub enum SkipReason {
 
     /// Entry type is not supported by the scanner.
     UnsupportedFileType,
+}
+
+/// Filesystem entry emitted by the scanner.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FsEntry {
+    /// Path relative to the scan root.
+    pub relative_path: RelativePath,
+
+    /// Absolute/native path used for filesystem access.
+    pub absolute_path: PathBuf,
+
+    /// Entry kind.
+    pub kind: FsEntryKind,
+
+    /// Metadata collected for this entry, when available.
+    pub metadata: Option<FsMetadata>,
+
+    /// Scanner status.
+    pub status: FsEntryStatus,
+}
+
+/// Metadata collected for a filesystem entry.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FsMetadata {
+    /// File size in bytes.
+    pub size_bytes: Option<u64>,
+
+    /// Modification time as signed nanoseconds relative to Unix epoch.
+    pub modified_time_ns: Option<i128>,
+
+    /// Is readonly according to platform metadata?
+    pub readonly: bool,
+
+    /// Is Windows reparse point?
+    pub is_reparse_point: bool,
 }

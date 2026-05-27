@@ -82,6 +82,10 @@ pub(crate) mod path;
 // Re-exports.
 pub use db::project::ProjectDb;
 pub use error::{Error, Result};
+pub use fs::entry::{FsEntry, FsEntryKind, FsEntryStatus, FsMetadata, SkipReason};
+pub use fs::metadata::collect_metadata;
+pub use fs::platform::is_reparse_point;
+pub use fs::scanner::{scan_tree, ScanFlow, ScanOptions, ScanSummary};
 pub use model::{
     CreateProjectRequest, OpenProjectRequest, Project, ProjectId, CURRENT_PROJECT_FORMAT_VERSION,
 };
