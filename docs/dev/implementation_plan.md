@@ -293,13 +293,13 @@ body {
 
 ### Acceptance criteria
 
-- [ ] `npm run tauri dev` starts FSDoctor successfully.
-- [ ] `cargo test -p fsdoctor-core` works independently of Tauri.
-- [ ] UI has a minimal Catppuccin Mocha appearance.
-- [ ] Top-level views are navigable.
-- [ ] A test Tauri command can be called from the frontend and returns data.
-- [ ] There is no integrity logic in the frontend.
-- [ ] There is no Tauri dependency in `fsdoctor-core`.
+- [x] `npm run tauri dev` starts FSDoctor successfully.
+- [x] `cargo test -p fsdoctor-core` works independently of Tauri.
+- [x] UI has a minimal Catppuccin Mocha appearance.
+- [ ] Top-level views are navigable. (No views yet, just a single page app)
+- [x] A test Tauri command can be called from the frontend and returns data.
+- [x] There is no integrity logic in the frontend.
+- [x] There is no Tauri dependency in `fsdoctor-core`.
 
 ---
 
@@ -398,13 +398,13 @@ ON check_results(scan_id, result_kind);
 
 ### Acceptance criteria
 
-- [ ] A new `.fsdoctor.sqlite` file can be created.
-- [ ] Existing `.fsdoctor.sqlite` files can be opened.
-- [ ] DB format version is stored and checked.
-- [ ] Project root path is stored.
-- [ ] App warns when the DB is being saved inside the backup folder.
-- [ ] Corrupt/non-FSDoctor SQLite files produce a friendly error.
-- [ ] Database tests cover migration, create, open, and version check.
+- [x] A new `.fsdoctor.sqlite` file can be created.
+- [x] Existing `.fsdoctor.sqlite` files can be opened.
+- [x] DB format version is stored and checked.
+- [x] Project root path is stored.
+- [ ] App warns when the DB is being saved inside the backup folder. (frontend very minial ATM)
+- [x] Corrupt/non-FSDoctor SQLite files produce a friendly error.
+- [x] Database tests cover migration, create, open, and version check.
 
 ---
 
@@ -461,13 +461,13 @@ pub enum FsEntryKind {
 
 ### Acceptance criteria
 
-- [ ] Scanner emits regular files.
-- [ ] Scanner emits directories.
-- [ ] Scanner records symlinks/reparse points as skipped/special entries and does not follow them.
-- [ ] Scanner records unreadable entries as errors instead of aborting.
-- [ ] Scanner produces stable root-relative paths.
-- [ ] Scanner does not include files outside the selected root.
-- [ ] Unit/integration tests cover normal files, nested directories, symlinks, empty directories, and unreadable entries where platform-supported.
+- [x] Scanner emits regular files.
+- [x] Scanner emits directories.
+- [x] Scanner records symlinks/reparse points as skipped/special entries and does not follow them.
+- [x] Scanner records unreadable entries as errors instead of aborting.
+- [x] Scanner produces stable root-relative paths.
+- [x] Scanner does not include files outside the selected root.
+- [x] Unit/integration tests cover normal files, nested directories, symlinks, empty directories, and unreadable entries where platform-supported.
 
 ---
 
