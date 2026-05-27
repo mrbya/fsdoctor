@@ -1,5 +1,70 @@
 use crate::error::{Error, Result};
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
+
+/// Root-relative path used as `FSDoctor`'s filesystem identity.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct RelativePath(String);
+
+impl RelativePath {
+    /// Creates a relative path from a path known to be under `root`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `path` is outside `root`, contains unsupported
+    /// components, or cannot be represented as UTF-8.
+    pub fn from_path_under_root(root: &Path, path: &Path) -> Result<Self> {
+        let relative = path
+            .strip_prefix(root)
+            .map_err(|_error| Error::PathOutsideRoot {
+                root: root.to_path_buf(),
+                path: path.to_path_buf(),
+            })?;
+
+        Self::from_relative_path(relative)
+    }
+
+    /// Creates a relative path from a relative native path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the path contains unsupported components or cannot
+    /// be represented as UTF-8.
+    pub fn from_relative_path(path: &Path) -> Result<Self> {
+        let mut parts = Vec::new();
+
+        for component in path.components() {
+            match component {
+                Component::Normal(part) => {
+                    let text = part.to_str().ok_or_else(|| Error::UnsupportedPath {
+                        path: path.to_path_buf(),
+                    })?;
+
+                    parts.push(text);
+                }
+                Component::CurDir => {}
+                Component::ParentDir | Component::RootDir | Component::Prefix(_) => {
+                    return Err(Error::UnsupportedPath {
+                        path: path.to_path_buf(),
+                    });
+                }
+            }
+        }
+
+        if parts.is_empty() {
+            return Err(Error::UnsupportedPath {
+                path: path.to_path_buf(),
+            });
+        }
+
+        Ok(Self(parts.join("/")))
+    }
+
+    /// Returns database/display representation.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
 
 /// Converts a path to a database text value.
 ///

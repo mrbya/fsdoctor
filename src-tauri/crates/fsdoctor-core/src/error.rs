@@ -54,4 +54,28 @@ pub enum Error {
         /// Path that could not be handled.
         path: std::path::PathBuf,
     },
+
+    /// The selected scan root is not a directory.
+    #[error("scan root is not a directory: `{path}`")]
+    InvalidScanRoot {
+        /// Path that was selected as a scan root.
+        path: PathBuf,
+    },
+
+    /// A path was expected to be inside the scan root, but was not.
+    #[error("path `{path}` is outside the scan root `{root}`")]
+    PathOutsideRoot {
+        /// Scan root.
+        root: PathBuf,
+
+        /// Path that was outside the scan root.
+        path: PathBuf,
+    },
+
+    /// A filesystem timestamp could not be represented by `FSDoctor`.
+    #[error("filesystem timestamp for `{path}` is outside the supported range")]
+    TimestampOutOfRange {
+        /// Path whose timestamp could not be represented.
+        path: PathBuf,
+    },
 }

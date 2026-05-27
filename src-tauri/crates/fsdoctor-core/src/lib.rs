@@ -72,6 +72,8 @@
 pub(crate) mod db;
 /// `FSDoctor` error and result types.
 pub(crate) mod error;
+/// Filesystem scanning and metadata collection.
+pub(crate) mod fs;
 /// `FSDoctor` domain model.
 pub(crate) mod model;
 /// `FSDoctor` path handling.
@@ -83,7 +85,7 @@ pub use error::{Error, Result};
 pub use model::{
     CreateProjectRequest, OpenProjectRequest, Project, ProjectId, CURRENT_PROJECT_FORMAT_VERSION,
 };
-pub use path::{db_text_to_path, path_to_db_text};
+pub use path::{db_text_to_path, path_to_db_text, RelativePath};
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::panic)]
