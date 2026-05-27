@@ -1,155 +1,255 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
+  import {
+    createProject,
+    openProject,
+    type CommandError,
+    type Project,
+  } from "$lib/api/project";
 
-  let name = $state("");
-  let greetMsg = $state("");
+  let projectName = $state("My Backup");
+  let rootPath = $state("");
+  let dbPath = $state("");
 
-  async function greet(event: Event) {
+  let project = $state<Project | null>(null);
+  let errorMessage = $state<string | null>(null);
+  let busy = $state(false);
+
+  async function runCreateProject(event: Event) {
     event.preventDefault();
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    greetMsg = await invoke("greet", { name });
+    busy = true;
+    errorMessage = null;
+
+    try {
+      project = await createProject({
+        name: projectName,
+        rootPath,
+        dbPath,
+      });
+    } catch (error) {
+      errorMessage = formatError(error);
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function runOpenProject(event: Event) {
+    event.preventDefault();
+    busy = true;
+    errorMessage = null;
+
+    try {
+      project = await openProject({ dbPath });
+    } catch (error) {
+      errorMessage = formatError(error);
+    } finally {
+      busy = false;
+    }
+  }
+
+  function formatError(error: unknown): string {
+    const commandError = error as Partial<CommandError>;
+
+    if (typeof commandError.message === "string") {
+      return commandError.message;
+    }
+
+    return "FSDoctor could not complete the requested operation.";
   }
 </script>
 
-<main class="container">
-  <h1>Welcome to Tauri + Svelte</h1>
+<main class="page">
+  <section class="card">
+    <p class="eyebrow">FSDoctor</p>
+    <h1>Project database foundation</h1>
+    <p class="muted">
+      Phase 1 creates and opens FSDoctor project databases. Scanning is not
+      implemented yet.
+    </p>
+  </section>
 
-  <div class="row">
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo vite" alt="Vite Logo" />
-    </a>
-    <a href="https://tauri.app" target="_blank">
-      <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank">
-      <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo" />
-    </a>
-  </div>
-  <p>Click on the Tauri, Vite, and SvelteKit logos to learn more.</p>
+  <section class="grid">
+    <form class="card" onsubmit={runCreateProject}>
+      <h2>Create project</h2>
 
-  <form class="row" onsubmit={greet}>
-    <input id="greet-input" placeholder="Enter a name..." bind:value={name} />
-    <button type="submit">Greet</button>
-  </form>
-  <p>{greetMsg}</p>
+      <label>
+        Project name
+        <input bind:value={projectName} placeholder="My Backup" />
+      </label>
+
+      <label>
+        Backup root path
+        <input bind:value={rootPath} placeholder="D:\\Backups\\OldShare" />
+      </label>
+
+      <label>
+        FSDoctor database path
+        <input
+          bind:value={dbPath}
+          placeholder="C:\\Users\\User\\Documents\\OldShare.fsdoctor.sqlite"
+        />
+      </label>
+
+      <button type="submit" disabled={busy}>Create project</button>
+    </form>
+
+    <form class="card" onsubmit={runOpenProject}>
+      <h2>Open project</h2>
+
+      <label>
+        FSDoctor database path
+        <input bind:value={dbPath} />
+      </label>
+
+      <button type="submit" disabled={busy}>Open project</button>
+    </form>
+  </section>
+
+  {#if errorMessage !== null}
+    <section class="card error">
+      <h2>Something went wrong</h2>
+      <p>{errorMessage}</p>
+    </section>
+  {/if}
+
+  {#if project !== null}
+    <section class="card success">
+      <h2>Project loaded</h2>
+      <dl>
+        <dt>Name</dt>
+        <dd>{project.name}</dd>
+
+        <dt>Root path</dt>
+        <dd>{project.rootPath}</dd>
+
+        <dt>Format version</dt>
+        <dd>{project.formatVersion}</dd>
+      </dl>
+    </section>
+  {/if}
 </main>
 
 <style>
-  .logo.vite:hover {
-    filter: drop-shadow(0 0 2em #747bff);
+  :global(:root) {
+    --ctp-rosewater: #f5e0dc;
+    --ctp-red: #f38ba8;
+    --ctp-peach: #fab387;
+    --ctp-yellow: #f9e2af;
+    --ctp-green: #a6e3a1;
+    --ctp-blue: #89b4fa;
+    --ctp-text: #cdd6f4;
+    --ctp-subtext0: #a6adc8;
+    --ctp-surface0: #313244;
+    --ctp-surface1: #45475a;
+    --ctp-base: #1e1e2e;
+    --ctp-mantle: #181825;
+    --ctp-crust: #11111b;
+
+    color: var(--ctp-text);
+    background: var(--ctp-base);
+    font-family:
+      "JetBrainsMono Nerd Font", "JetBrains Mono", ui-monospace, monospace;
   }
 
-  .logo.svelte-kit:hover {
-    filter: drop-shadow(0 0 2em #ff3e00);
-  }
-
-  :root {
-    font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-    font-size: 16px;
-    line-height: 24px;
-    font-weight: 400;
-
-    color: #0f0f0f;
-    background-color: #f6f6f6;
-
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
-  }
-
-  .container {
+  :global(body) {
     margin: 0;
-    padding-top: 10vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
+    background: var(--ctp-base);
   }
 
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: 0.75s;
+  .page {
+    min-height: 100vh;
+    box-sizing: border-box;
+    padding: 2rem;
+    background:
+      radial-gradient(
+        circle at top left,
+        rgba(137, 180, 250, 0.15),
+        transparent 24rem
+      ),
+      var(--ctp-base);
   }
 
-  .logo.tauri:hover {
-    filter: drop-shadow(0 0 2em #24c8db);
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
   }
 
-  .row {
-    display: flex;
-    justify-content: center;
+  .card {
+    border: 1px solid var(--ctp-surface1);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    background: var(--ctp-mantle);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.25);
   }
 
-  a {
-    font-weight: 500;
-    color: #646cff;
-    text-decoration: inherit;
+  .eyebrow {
+    margin: 0;
+    color: var(--ctp-blue);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
   }
 
-  a:hover {
-    color: #535bf2;
+  h1,
+  h2 {
+    margin-top: 0.25rem;
   }
 
-  h1 {
-    text-align: center;
+  .muted {
+    color: var(--ctp-subtext0);
   }
 
-  input,
+  label {
+    display: grid;
+    gap: 0.4rem;
+    margin-block: 0.9rem;
+    color: var(--ctp-subtext0);
+  }
+
+  input {
+    border: 1px solid var(--ctp-surface1);
+    border-radius: 0.6rem;
+    padding: 0.7rem;
+    color: var(--ctp-text);
+    background: var(--ctp-crust);
+    font: inherit;
+  }
+
   button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    color: #0f0f0f;
-    background-color: #ffffff;
-    transition: border-color 0.25s;
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-  }
-
-  button {
+    border: 0;
+    border-radius: 0.6rem;
+    padding: 0.75rem 1rem;
+    color: var(--ctp-crust);
+    background: var(--ctp-blue);
+    font: inherit;
     cursor: pointer;
   }
 
-  button:hover {
-    border-color: #396cd8;
-  }
-  button:active {
-    border-color: #396cd8;
-    background-color: #e8e8e8;
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 
-  input,
-  button {
-    outline: none;
+  .error {
+    margin-top: 1rem;
+    border-color: var(--ctp-red);
   }
 
-  #greet-input {
-    margin-right: 5px;
+  .success {
+    margin-top: 1rem;
+    border-color: var(--ctp-green);
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      color: #f6f6f6;
-      background-color: #2f2f2f;
-    }
+  dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.5rem 1rem;
+  }
 
-    a:hover {
-      color: #24c8db;
-    }
+  dt {
+    color: var(--ctp-subtext0);
+  }
 
-    input,
-    button {
-      color: #ffffff;
-      background-color: #0f0f0f98;
-    }
-    button:active {
-      background-color: #0f0f0f69;
-    }
+  dd {
+    margin: 0;
   }
 </style>
