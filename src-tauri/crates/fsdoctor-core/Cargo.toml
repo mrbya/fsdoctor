@@ -7,6 +7,14 @@ edition.workspace       = true
 license.workspace       = true
 
 [dependencies]
+thiserror.workspace = true
+sqlx.workspace = true
+time.workspace = true
+
+[dev-dependencies]
+pretty_assertions.workspace = true
+tokio.workspace = true
+tempfile.workspace = true
 
 [package.metadata.cargo-udeps.ignore]
 development = ["criterion", "pretty_assertions"]

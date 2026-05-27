@@ -68,7 +68,18 @@
     clippy::verbose_file_reads
 )]
 
-/// Stub fn
-pub fn stub() {
-    println!("Hello from FSDoctor core");
-}
+/// `FSDoctor` `SQLite` db client.
+pub(crate) mod db;
+/// `FSDoctor` error and result types.
+pub(crate) mod error;
+/// `FSDoctor` domain model.
+pub(crate) mod model;
+/// `FSDoctor` path handling.
+pub(crate) mod path;
+
+// Re-exports.
+pub use error::{Error, Result};
+pub use model::{
+    CreateProjectRequest, OpenProjectRequest, Project, ProjectId, CURRENT_PROJECT_FORMAT_VERSION,
+};
+pub use path::{db_text_to_path, path_to_db_text};

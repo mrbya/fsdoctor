@@ -30,9 +30,14 @@ tauri                   = { version = "2", features = [] }
 tauri-plugin-opener     = { version = "2" }
 serde                   = { version = "1", features = ["derive"] }
 serde_json              = { version = "1" }
+thiserror               = { version = "2" }
+sqlx                    = { version = "0.9", features = ["sqlite", "time", "macros", "migrate", "runtime-tokio"] }
+time                    = { version = "0.3" }
+tokio                   = { version = "1", features = ["macros", "rt-multi-thread"] }
 # Dev
 criterion               = { version = "0.8" }
 pretty_assertions       = { version = "1" }
+tempfile                = { version = "3" }
 
 [lib]
 name = "fsdoctor_lib"
@@ -46,6 +51,7 @@ tauri.workspace = true
 tauri-plugin-opener.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+fsdoctor-core.workspace = true
 
 [package.metadata.cargo-udeps.ignore]
 normal = [
