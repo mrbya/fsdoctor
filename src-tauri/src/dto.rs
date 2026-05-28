@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// Request to create a new `FSDoctor` project.
+/// Request to create a new `FSDoctor` project database.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateProjectRequestDto {
@@ -14,7 +14,7 @@ pub struct CreateProjectRequestDto {
     pub root_path: String,
 }
 
-/// Request to open an existing `FSDoctor` project.
+/// Request to open an existing `FSDoctor` project database.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OpenProjectRequestDto {

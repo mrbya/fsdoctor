@@ -1,10 +1,6 @@
 <script lang="ts">
-  import {
-    createProject,
-    openProject,
-    type CommandError,
-    type Project,
-  } from "$lib/api/project";
+  import type { CommandError, Project } from "$lib/types";
+  import { createProject, openProject } from "$lib/api";
 
   let projectName = $state("My Backup");
   let rootPath = $state("");
