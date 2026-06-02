@@ -6,7 +6,7 @@
     PageHeader,
     StatusBadge,
   } from "$lib/components";
-  import { projectStore } from "$lib/stores/project";
+  import { projectStore } from "$lib/stores/project.svelte";
   import { isPathInsideRoot } from "$lib/utils/helpers";
 
   let projectName = $state("My Backup");

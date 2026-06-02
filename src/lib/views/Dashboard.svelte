@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Card, EmptyState, PageHeader, StatusBadge } from "$lib/components";
-  import { projectStore } from "$lib/stores/project";
+  import { projectStore } from "$lib/stores/project.svelte";
 </script>
 
 <div class="view">
