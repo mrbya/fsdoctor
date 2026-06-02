@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CheckBadkup } from "$lib/views";
+  import { CheckBackup } from "$lib/views";
 </script>
 
-<CheckBadkup />
+<CheckBackup />
