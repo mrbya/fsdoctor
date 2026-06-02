@@ -31,7 +31,7 @@ repos:
             justfile|
           )$
 
-      - id: pre-commit-rs
+      - id: pre-commit-js
         name: pre commit formating, linter checks and tests for frontend sources
         language: unsupported
         entry: just pre-commit-js
