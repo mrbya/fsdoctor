@@ -26,20 +26,20 @@
   .button {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: var(--fd-space-xs);
-    min-height: 2.5rem;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
     border: 1px solid transparent;
-    border-radius: var(--fd-radius-md);
-    padding: 0.65rem 1rem;
-    color: var(--fd-color-bg-elevated);
-    background: var(--fd-color-accent);
-    font: inherit;
+    border-radius: var(--radius);
+    font-family: var(--font);
+    font-size: var(--font-size-base);
+    font-weight: 500;
     cursor: pointer;
     transition:
-      border-color 120ms ease,
-      background 120ms ease,
-      opacity 120ms ease;
+      background 0.15s,
+      color 0.15s,
+      border-color 0.15s,
+      opacity 0.15s;
+    white-space: nowrap;
   }
 
   .button:disabled {
@@ -48,23 +48,30 @@
   }
 
   .variant-primary {
-    color: var(--ctp-crust);
-    background: var(--fd-color-accent);
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
   }
 
   .variant-secondary {
-    color: var(--fd-color-text);
-    border-color: var(--fd-color-border);
-    background: var(--fd-color-bg-raised);
+    color: var(--text);
+    border-color: var(--border);
+    background: var(--bg-raised);
   }
 
   .variant-ghost {
-    color: var(--fd-color-text-muted);
     background: transparent;
+    color: var(--text);
+    border-color: var(--border);
   }
 
   .variant-danger {
-    color: var(--ctp-crust);
-    background: var(--fd-color-danger);
+    background: var(--danger);
+    color: var(--bg);
+    border-color: var(--danger);
+  }
+
+  .variant-danger:hover:not(:disabled) {
+    opacity: 0.85;
   }
 </style>

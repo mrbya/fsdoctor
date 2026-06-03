@@ -18,10 +18,10 @@
 
 <style>
   .progress-panel {
-    border: 1px solid var(--fd-color-border);
-    border-radius: var(--fd-radius-lg);
-    padding: var(--fd-space-lg);
-    background: var(--fd-color-bg-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    background: var(--bg-muted);
   }
 
   h2,
@@ -30,7 +30,7 @@
   }
 
   p {
-    margin-top: var(--fd-space-xs);
-    color: var(--fd-color-text-muted);
+    margin-top: var(--space-xs);
+    color: var(--text-muted);
   }
 </style>

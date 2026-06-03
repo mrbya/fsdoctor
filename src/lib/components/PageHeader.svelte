@@ -22,26 +22,26 @@
 <style>
   .page-header {
     display: grid;
-    gap: var(--fd-space-xs);
+    gap: var(--space-xs);
   }
 
   .eyebrow {
     margin: 0;
-    color: var(--fd-color-accent);
+    color: var(--accent);
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
 
   h1 {
     margin: 0;
-    color: var(--fd-color-text);
+    color: var(--text);
     font-size: clamp(1.75rem, 4vw, 3rem);
   }
 
   .description {
     max-width: 72ch;
     margin: 0;
-    color: var(--fd-color-text-muted);
+    color: var(--text-muted);
     line-height: 1.6;
   }
 </style>

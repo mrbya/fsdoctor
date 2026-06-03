@@ -18,26 +18,25 @@
 
 <style>
   .card {
-    border: 1px solid var(--fd-color-border);
-    border-radius: var(--fd-radius-lg);
-    padding: var(--fd-space-lg);
-    background: var(--fd-color-bg-muted);
-    box-shadow: var(--fd-shadow-raised);
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
   }
 
   .tone-success {
-    border-color: var(--fd-color-success);
+    border-color: var(--success);
   }
 
   .tone-warning {
-    border-color: var(--fd-color-warning);
+    border-color: var(--warning);
   }
 
   .tone-danger {
-    border-color: var(--fd-color-danger);
+    border-color: var(--danger);
   }
 
   .tone-info {
-    border-color: var(--fd-color-info);
+    border-color: var(--info);
   }
 </style>

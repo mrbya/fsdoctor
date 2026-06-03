@@ -19,7 +19,7 @@
     | "reports"
     | "settings";
 
-  let activeView = $state<View>("create-manifest");
+  let activeView = $state<View>("dashboard");
 
   const navItems = $derived([
     { id: "dashboard" as View, icon: LayoutDashboard, label: "Dashboard" },
@@ -40,7 +40,7 @@
       {#each navItems as item (item.id)}
         <li>
           <button
-            class="nav-btn"
+            class="nav-button"
             class:active={activeView === item.id}
             title={item.label}
             onclick={() => (activeView = item.id)}
@@ -71,40 +71,65 @@
 
 <style>
   .shell {
-    display: grid;
-    grid-template-columns: 18rem minmax(0, 1fr);
-    min-height: 100vh;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
   }
 
   .sidebar {
-    position: sticky;
-    top: 0;
-    display: grid;
-    align-content: start;
-    gap: var(--fd-space-lg);
-    height: 100vh;
-    border-right: 1px solid var(--fd-color-border);
-    padding: var(--fd-space-lg);
-    background: color-mix(in srgb, var(--fd-color-bg-muted), transparent 12%);
+    width: 64px;
+    flex-shrink: 0;
+    background: var(--bg-raised);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+  }
+
+  .nav-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0 0.5rem;
+  }
+
+  .nav-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      color 0.15s;
+  }
+
+  .nav-button:hover {
+    background: var(--bg-input);
+    color: var(--text);
+  }
+
+  .nav-button.active {
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+  }
+
+  .icon {
+    line-height: 1;
+    display: flex;
   }
 
   .content {
-    min-width: 0;
-    padding: var(--fd-space-xl);
-  }
-
-  @media (max-width: 48rem) {
-    .shell {
-      grid-template-columns: 1fr;
-    }
-
-    .sidebar {
-      position: static;
-      height: auto;
-    }
-
-    nav {
-      grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-    }
+    flex: 1;
+    overflow-y: auto;
+    background: var(--bg);
+    padding: var(--space--sm);
   }
 </style>

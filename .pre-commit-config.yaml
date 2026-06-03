@@ -10,6 +10,7 @@ repos:
     - id: check-yaml
       files: ^(?!\.gitlab-ci\.yml$).*\.ya?ml$
     - id: check-added-large-files
+      files: ^(?!.*.ttf)
 
   - repo: https://github.com/matthorgan/pre-commit-conventional-commits
     rev: 20fb9631be1385998138432592d0b6d4dfa38fc9

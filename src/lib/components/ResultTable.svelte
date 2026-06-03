@@ -12,10 +12,10 @@
 
 <style>
   .result-table-placeholder {
-    border: 1px solid var(--fd-color-border);
-    border-radius: var(--fd-radius-lg);
-    padding: var(--fd-space-lg);
-    color: var(--fd-color-text-muted);
-    background: var(--fd-color-bg-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    color: var(--text-muted);
+    background: var(--bg-muted);
   }
 </style>

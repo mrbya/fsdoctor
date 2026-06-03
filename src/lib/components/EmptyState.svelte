@@ -28,26 +28,28 @@
 
 <style>
   .empty-state {
-    display: grid;
-    place-items: start;
-    gap: var(--fd-space-sm);
-    border: 1px dashed var(--fd-color-border);
-    border-radius: var(--fd-radius-lg);
-    padding: var(--fd-space-xl);
-    color: var(--fd-color-text-muted);
-    background: rgb(49 50 68 / 40%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+    text-align: center;
+    opacity: 0.5;
   }
 
   h2,
   p {
     margin: 0;
+    font-size: var(--font-size-base);
   }
 
   h2 {
-    color: var(--fd-color-text);
+    color: var(--text);
   }
 
   .actions {
-    margin-top: var(--fd-space-sm);
+    margin-top: var(--space-sm);
   }
 </style>

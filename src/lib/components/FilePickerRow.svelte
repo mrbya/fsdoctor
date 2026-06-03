@@ -34,23 +34,36 @@
 
 <style>
   .field {
-    display: grid;
-    gap: var(--fd-space-xs);
-    color: var(--fd-color-text-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    color: var(--text-muted);
   }
 
   .row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: var(--fd-space-xs);
+    gap: var(--space-xs);
   }
 
   input {
-    min-width: 0;
-    border: 1px solid var(--fd-color-border);
-    border-radius: var(--fd-radius-md);
-    padding: 0.7rem;
-    color: var(--fd-color-text);
-    background: var(--fd-color-bg-elevated);
+    width: 100%;
+    padding: 0.45rem 0.75rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: var(--font-size-base);
+    transition: border-color 0.15s;
+  }
+
+  input:hover {
+    border-color: var(--text-muted);
+  }
+
+  input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 </style>
