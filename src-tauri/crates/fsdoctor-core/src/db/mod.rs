@@ -1,4 +1,8 @@
+/// DB client helpers.
+pub mod helpers;
+/// DB Manifest entry management.
+pub mod manifest;
 /// DB client project api model.
 pub mod project;
-/// DB schema.
-pub mod schema;
+/// DB scan entry model.
+pub mod scan;

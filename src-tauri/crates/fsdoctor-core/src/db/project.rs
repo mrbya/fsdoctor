@@ -3,9 +3,9 @@ use std::path::Path;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
 use sqlx::Row;
 use sqlx::{migrate::Migrator, SqlitePool};
-use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 
+use crate::db::helpers::{format_timestamp, parse_timestamp};
 use crate::error::{Error, Result};
 use crate::{
     db_text_to_path, path_to_db_text, CreateProjectRequest, OpenProjectRequest, Project, ProjectId,
@@ -19,7 +19,7 @@ static MIGRATOR: Migrator = sqlx::migrate!("../../migrations");
 #[derive(Debug, Clone)]
 pub struct ProjectDb {
     /// `SQLite` connection pool.
-    pool: SqlitePool,
+    pub(crate) pool: SqlitePool,
 }
 
 impl ProjectDb {
@@ -222,16 +222,4 @@ async fn connect_sqlite(path: &Path, create_if_missing: bool) -> Result<SqlitePo
         .foreign_keys(true);
 
     Ok(SqlitePool::connect_with(options).await?)
-}
-
-/// Formats a timestamp for storage.
-fn format_timestamp(timestamp: OffsetDateTime) -> Result<String> {
-    timestamp
-        .format(&Rfc3339)
-        .map_err(|_error| Error::InvalidProjectDatabase)
-}
-
-/// Parses a timestamp from storage.
-fn parse_timestamp(timestamp: &str) -> Result<OffsetDateTime> {
-    OffsetDateTime::parse(timestamp, &Rfc3339).map_err(|_error| Error::InvalidProjectDatabase)
 }

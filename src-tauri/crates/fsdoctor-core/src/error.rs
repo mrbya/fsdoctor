@@ -100,4 +100,8 @@ pub enum Error {
         /// Path to file changed during hashing.
         path: PathBuf,
     },
+
+    /// A numeric value could not be represented in `SQLite`.
+    #[error("numeric value is too large to store in the database")]
+    NumericOverflow,
 }

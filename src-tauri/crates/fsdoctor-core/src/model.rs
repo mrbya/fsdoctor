@@ -64,3 +64,104 @@ pub struct OpenProjectRequest {
     /// Path to the existing `.fsdoctor.sqlite` db file.
     pub db_path: PathBuf,
 }
+
+/// Database-local scan identifier.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ScanId(i64);
+
+impl ScanId {
+    /// Creates a scan id from a raw database id.
+    #[must_use]
+    pub const fn from_raw(raw: i64) -> Self {
+        Self(raw)
+    }
+
+    /// Returns the raw database id.
+    #[must_use]
+    pub const fn raw(self) -> i64 {
+        self.0
+    }
+}
+
+/// Scan kind stored in the database.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScanKind {
+    /// Manifest generation scan.
+    ManifestGeneration,
+
+    /// Integrity check scan.
+    IntegrityCheck,
+}
+
+impl ScanKind {
+    /// Stable DB string.
+    #[must_use]
+    pub const fn as_db_str(self) -> &'static str {
+        match self {
+            Self::ManifestGeneration => "manifest_generation",
+            Self::IntegrityCheck => "integrity_check",
+        }
+    }
+}
+
+/// Scan lifecycle status.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScanStatus {
+    /// Scan is currently running.
+    Running,
+
+    /// Scan completed successfully.
+    Completed,
+
+    /// Scan was canceled.
+    Cancelled,
+
+    /// Scan failed.
+    Failed,
+}
+
+impl ScanStatus {
+    /// Stable DB string.
+    #[must_use]
+    pub const fn as_db_str(self) -> &'static str {
+        match self {
+            Self::Running => "running",
+            Self::Completed => "completed",
+            Self::Cancelled => "cancelled",
+            Self::Failed => "failed",
+        }
+    }
+}
+
+/// Manifest entry status.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ManifestEntryStatus {
+    /// File was hashed successfully.
+    Hashed,
+
+    /// Non-file entry was recorded successfully.
+    Recorded,
+
+    /// Entry was skipped by policy.
+    Skipped,
+
+    /// Entry could not be read.
+    Unreadable,
+
+    /// File changed while being hashed.
+    ChangedDuringScan,
+}
+
+impl ManifestEntryStatus {
+    /// Stable DB string.
+    #[must_use]
+    pub const fn as_db_str(self) -> &'static str {
+        match self {
+            Self::Hashed => "hashed",
+            Self::Recorded => "recorded",
+            Self::Skipped => "skipped",
+            Self::Unreadable => "unreadable",
+            Self::ChangedDuringScan => "changed_during_scan",
+        }
+    }
+}

@@ -41,7 +41,6 @@
 // clippy DENY level lints, they always have a quick fix that should be preferred
 #![deny(
     clippy::wildcard_imports,
-    clippy::multiple_inherent_impl,
     clippy::rc_buffer,
     clippy::rc_mutex,
     clippy::rest_pat_in_fully_bound_structs,

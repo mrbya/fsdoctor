@@ -51,7 +51,6 @@
 // clippy DENY level lints, they always have a quick fix that should be preferred
 #![deny(
     clippy::wildcard_imports,
-    clippy::multiple_inherent_impl,
     clippy::rc_buffer,
     clippy::rc_mutex,
     clippy::rest_pat_in_fully_bound_structs,
@@ -91,7 +90,8 @@ pub use hash::cancel::CancelToken;
 pub use hash::digest::{FileDigest, HashAlgorithm};
 pub use hash::file::{hash_file, FileFingerprint, HashOptions, HashOutcome, HashedFile};
 pub use model::{
-    CreateProjectRequest, OpenProjectRequest, Project, ProjectId, CURRENT_PROJECT_FORMAT_VERSION,
+    CreateProjectRequest, ManifestEntryStatus, OpenProjectRequest, Project, ProjectId, ScanId,
+    ScanKind, ScanStatus, CURRENT_PROJECT_FORMAT_VERSION,
 };
 pub use path::{db_text_to_path, path_to_db_text, RelativePath};
 
