@@ -516,13 +516,13 @@ else:
 
 ### Acceptance criteria
 
-- [ ] Regular files can be hashed with BLAKE3.
-- [ ] Hashes are stored internally as 32-byte binary values.
-- [ ] Hash hex conversion exists only for display/export.
-- [ ] Known input bytes produce expected BLAKE3 digest.
-- [ ] File mutation during hashing is detected where testable.
-- [ ] Cancellation can interrupt hashing of a large file.
-- [ ] Hashing errors are structured and user-reportable.
+- [x] Regular files can be hashed with BLAKE3.
+- [x] Hashes are stored internally as 32-byte binary values.
+- [x] Hash hex conversion exists only for display/export.
+- [x] Known input bytes produce expected BLAKE3 digest.
+- [x] File mutation during hashing is detected where testable.
+- [x] Cancellation can interrupt hashing of a large file.
+- [x] Hashing errors are structured and user-reportable.
 
 ---
 
