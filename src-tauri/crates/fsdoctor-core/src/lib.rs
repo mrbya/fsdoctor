@@ -74,6 +74,8 @@ pub(crate) mod error;
 pub(crate) mod fs;
 /// Streamed BLAKE3 hashing.
 pub(crate) mod hash;
+/// `FSDoctor` manifest management.
+pub(crate) mod manifest;
 /// `FSDoctor` domain model.
 pub(crate) mod model;
 /// `FSDoctor` path handling.
