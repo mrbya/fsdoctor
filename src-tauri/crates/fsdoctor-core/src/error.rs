@@ -78,4 +78,26 @@ pub enum Error {
         /// Path whose timestamp could not be represented.
         path: PathBuf,
     },
+
+    /// Invalid hash chunk size was configured.
+    #[error("invalid hash chunk size")]
+    InvalidHashChunkSize,
+
+    /// Hashing was cancelled by the caller.
+    #[error("hashing was cancelled")]
+    HashingCancelled,
+
+    /// The selected path is not a regular file and cannot be hashed.
+    #[error("provided path is not a regular file and cannot be hashed: `{path}`")]
+    NotRegularFile {
+        /// Path that was requested for hashing.
+        path: PathBuf,
+    },
+
+    /// A file had been changed while it was being hashed.
+    #[error("file changed while being hashed: `{path}`")]
+    ChangedDuringHash {
+        /// Path to file changed during hashing.
+        path: PathBuf,
+    },
 }

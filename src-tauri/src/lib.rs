@@ -30,7 +30,6 @@
     clippy::deref_by_slicing,
     clippy::empty_drop,
     clippy::empty_structs_with_brackets,
-    clippy::filetype_is_file,
     clippy::float_cmp_const,
     clippy::if_then_some_else_none,
     clippy::indexing_slicing,

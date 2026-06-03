@@ -24,6 +24,19 @@ pub fn collect_metadata(path: &Path, kind: FsEntryKind, metadata: &Metadata) -> 
     })
 }
 
+/// Retrieves Unix epoch relative ns modification time from file metadata.
+///
+/// # Errors
+///
+/// Returns an error if underlying system time retrieval fails.
+pub fn metadata_modified_time_ns(path: &Path, metadata: &Metadata) -> Result<Option<i128>> {
+    let Ok(modified) = metadata.modified() else {
+        return Ok(None);
+    };
+
+    system_time_to_unix_ns(path, modified).map(Some)
+}
+
 /// Returns the file size for regular files.
 fn size_for_kind(kind: FsEntryKind, metadata: &Metadata) -> Option<u64> {
     match kind {

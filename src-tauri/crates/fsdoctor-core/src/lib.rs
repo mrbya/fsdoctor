@@ -40,7 +40,6 @@
     clippy::deref_by_slicing,
     clippy::empty_drop,
     clippy::empty_structs_with_brackets,
-    clippy::filetype_is_file,
     clippy::float_cmp_const,
     clippy::if_then_some_else_none,
     clippy::indexing_slicing,
@@ -74,6 +73,8 @@ pub(crate) mod db;
 pub(crate) mod error;
 /// Filesystem scanning and metadata collection.
 pub(crate) mod fs;
+/// Streamed BLAKE3 hashing.
+pub(crate) mod hash;
 /// `FSDoctor` domain model.
 pub(crate) mod model;
 /// `FSDoctor` path handling.
@@ -86,6 +87,9 @@ pub use fs::entry::{FsEntry, FsEntryKind, FsEntryStatus, FsMetadata, SkipReason}
 pub use fs::metadata::collect_metadata;
 pub use fs::platform::is_reparse_point;
 pub use fs::scanner::{scan_tree, ScanFlow, ScanOptions, ScanSummary};
+pub use hash::cancel::CancelToken;
+pub use hash::digest::{FileDigest, HashAlgorithm};
+pub use hash::file::{hash_file, FileFingerprint, HashOptions, HashOutcome, HashedFile};
 pub use model::{
     CreateProjectRequest, OpenProjectRequest, Project, ProjectId, CURRENT_PROJECT_FORMAT_VERSION,
 };

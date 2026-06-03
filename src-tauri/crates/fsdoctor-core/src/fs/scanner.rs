@@ -200,10 +200,10 @@ fn scan_one_entry(
 fn classify_file_type(file_type: FileType) -> FsEntryKind {
     if file_type.is_symlink() {
         FsEntryKind::Symlink
-    } else if !file_type.is_dir() {
-        FsEntryKind::File
     } else if file_type.is_dir() {
         FsEntryKind::Directory
+    } else if file_type.is_file() {
+        FsEntryKind::File
     } else {
         FsEntryKind::Other
     }
