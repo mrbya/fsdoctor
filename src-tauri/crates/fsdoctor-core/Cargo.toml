@@ -10,6 +10,7 @@ license.workspace       = true
 thiserror.workspace = true
 sqlx.workspace = true
 time.workspace = true
+blake3.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true
