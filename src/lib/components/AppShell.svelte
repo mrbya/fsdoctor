@@ -71,9 +71,9 @@
 
 <style>
   .shell {
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    min-height: 100vh;
   }
 
   .sidebar {
