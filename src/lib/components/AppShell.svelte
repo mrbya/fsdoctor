@@ -1,74 +1,71 @@
 <script lang="ts">
-  import { page } from "$app/state";
-  import type { Snippet } from "svelte";
+  import {
+    ClipboardList,
+    ClipboardPlus,
+    FolderCheck,
+    LayoutDashboard,
+    SettingsIcon,
+  } from "@lucide/svelte";
+  import CreateManifest from "$lib/views/CreateManifest.svelte";
+  import CheckBackup from "$lib/views/CheckBackup.svelte";
+  import ReportHistory from "$lib/views/ReportHistory.svelte";
+  import Settings from "$lib/views/Settings.svelte";
+  import Dashboard from "$lib/views/Dashboard.svelte";
 
-  type NavItem = {
-    href: string;
-    label: string;
-    description: string;
-  };
+  type View =
+    | "dashboard"
+    | "create-manifest"
+    | "check-backup"
+    | "reports"
+    | "settings";
 
-  const navItems: NavItem[] = [
-    {
-      href: "/",
-      label: "Dashboard",
-      description: "Project overview",
-    },
-    {
-      href: "/create-manifest",
-      label: "Create Manifest",
-      description: "Create an integrity record",
-    },
-    {
-      href: "/check-backup",
-      label: "Check Backup",
-      description: "Verify backup health",
-    },
-    {
-      href: "/reports",
-      label: "Reports",
-      description: "Review previous checks",
-    },
-    {
-      href: "/settings",
-      label: "Settings",
-      description: "Application preferences",
-    },
-  ];
+  let activeView = $state<View>("create-manifest");
 
-  let { children }: { children: Snippet } = $props();
-
-  function isActive(href: string): boolean {
-    if (href === "/") {
-      return page.url.pathname === "/";
-    }
-
-    return page.url.pathname.startsWith(href);
-  }
+  const navItems = $derived([
+    { id: "dashboard" as View, icon: LayoutDashboard, label: "Dashboard" },
+    {
+      id: "create-manifest" as View,
+      icon: ClipboardPlus,
+      label: "Create manifest",
+    },
+    { id: "check-backup" as View, icon: FolderCheck, label: "Check backup" },
+    { id: "reports" as View, icon: ClipboardList, label: "Reports" },
+    { id: "settings" as View, icon: SettingsIcon, label: "Settings" },
+  ]);
 </script>
 
 <div class="shell">
-  <aside class="sidebar">
-    <a href="/" class="brand">
-      <span class="brand-mark">FS</span>
-      <span>
-        <strong>FSDoctor</strong>
-        <small>Backup health</small>
-      </span>
-    </a>
-
-    <nav aria-label="Main navigation">
-      {#each navItems as item}
-        <a href={item.href} class:active={isActive(item.href)}>
-          <span>{item.label}</span>
-          <small>{item.description}</small>
-        </a>
+  <nav class="sidebar">
+    <ul class="nav-list">
+      {#each navItems as item (item.id)}
+        <li>
+          <button
+            class="nav-btn"
+            class:active={activeView === item.id}
+            title={item.label}
+            onclick={() => (activeView = item.id)}
+          >
+            <span class="icon">
+              <item.icon size={20} strokeWidth={1.75} />
+            </span>
+          </button>
+        </li>
       {/each}
-    </nav>
-  </aside>
+    </ul>
+  </nav>
 
   <main class="content">
-    {@render children()}
+    {#if activeView === "dashboard"}
+      <Dashboard />
+    {:else if activeView === "create-manifest"}
+      <CreateManifest />
+    {:else if activeView === "check-backup"}
+      <CheckBackup />
+    {:else if activeView === "reports"}
+      <ReportHistory />
+    {:else if activeView === "settings"}
+      <Settings />
+    {/if}
   </main>
 </div>
 
@@ -89,61 +86,6 @@
     border-right: 1px solid var(--fd-color-border);
     padding: var(--fd-space-lg);
     background: color-mix(in srgb, var(--fd-color-bg-muted), transparent 12%);
-  }
-
-  .brand {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: var(--fd-space-sm);
-    color: var(--fd-color-text);
-    text-decoration: none;
-  }
-
-  .brand-mark {
-    display: grid;
-    place-items: center;
-    width: 2.5rem;
-    aspect-ratio: 1;
-    border-radius: var(--fd-radius-md);
-    color: var(--ctp-crust);
-    background: var(--fd-color-accent);
-    font-weight: 700;
-  }
-
-  .brand strong,
-  .brand small {
-    display: block;
-  }
-
-  .brand small {
-    color: var(--fd-color-text-muted);
-  }
-
-  nav {
-    display: grid;
-    gap: var(--fd-space-xs);
-  }
-
-  nav a {
-    display: grid;
-    gap: 0.15rem;
-    border: 1px solid transparent;
-    border-radius: var(--fd-radius-md);
-    padding: var(--fd-space-sm);
-    color: var(--fd-color-text-muted);
-    text-decoration: none;
-  }
-
-  nav a:hover,
-  nav a.active {
-    border-color: var(--fd-color-border);
-    color: var(--fd-color-text);
-    background: var(--fd-color-bg-raised);
-  }
-
-  nav small {
-    color: var(--fd-color-text-subtle);
   }
 
   .content {

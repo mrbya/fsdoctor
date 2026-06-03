@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Dashboard } from "$lib/views";
+  import AppShell from "$lib/components/AppShell.svelte";
 </script>
 
-<Dashboard />
+<AppShell />

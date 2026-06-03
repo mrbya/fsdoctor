@@ -21,7 +21,7 @@
     "@tauri-apps/plugin-opener",
     "@tauri-apps/plugin-store",
     "@inlang/paraglide-js",
-    "lucide-svelte"
+    "@lucide/svelte"
   ],
   "compilers": {
     "svelte": "svelte/compiler"
