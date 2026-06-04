@@ -82,6 +82,7 @@ pub(crate) mod model;
 pub(crate) mod path;
 
 // Re-exports.
+pub use db::manifest::ManifestEntrySnapshot;
 pub use db::project::ProjectDb;
 pub use error::{Error, Result};
 pub use fs::entry::{FsEntry, FsEntryKind, FsEntryStatus, FsMetadata, SkipReason};
@@ -91,6 +92,8 @@ pub use fs::scanner::{scan_tree, ScanFlow, ScanOptions, ScanSummary};
 pub use hash::cancel::CancelToken;
 pub use hash::digest::{FileDigest, HashAlgorithm};
 pub use hash::file::{hash_file, FileFingerprint, HashOptions, HashOutcome, HashedFile};
+pub use manifest::generation::generate_manifest;
+pub use manifest::progress::{ManifestGenerationPhase, ManifestGenerationProgress};
 pub use model::{
     CreateProjectRequest, ManifestEntryStatus, OpenProjectRequest, Project, ProjectId, ScanId,
     ScanKind, ScanStatus, CURRENT_PROJECT_FORMAT_VERSION,

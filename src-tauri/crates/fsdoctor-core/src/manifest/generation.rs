@@ -1,9 +1,17 @@
-use tokio::sync::mpsc;
+use std::path::Path;
+
+use tokio::{
+    sync::mpsc,
+    task::{self, JoinHandle},
+};
 
 use crate::{
     db::{manifest::ManifestEntryRecord, scan::ScanCounters},
-    hash_file, CancelToken, Error, FsEntry, FsEntryKind, FsEntryStatus, HashOptions, HashOutcome,
-    ManifestEntryStatus, ProjectDb, ProjectId, Result, ScanId,
+    hash_file,
+    manifest::model::{ManifestGenerationOptions, ManifestGenerationReport},
+    scan_tree, CancelToken, Error, FsEntry, FsEntryKind, FsEntryStatus, HashOptions, HashOutcome,
+    ManifestEntryStatus, ProjectDb, ProjectId, Result, ScanFlow, ScanId, ScanKind, ScanOptions,
+    ScanStatus,
 };
 
 /// Number of manifest records buffered between producer and DB writer.
@@ -27,6 +35,156 @@ enum RecordProduction {
 
     /// Cancellation was observed.
     Cancelled,
+}
+
+/// Generates and persists a file-tree manifest for the project database.
+///
+/// # Errors
+///
+/// Returns an error if scan creation, filesystem scanning, hashing, worker
+/// execution, or database persistence fails.
+pub async fn generate_manifest(
+    db: &ProjectDb,
+    options: ManifestGenerationOptions,
+    cancel_token: &CancelToken,
+) -> Result<ManifestGenerationReport> {
+    if options.db_batch_size == 0 {
+        return Err(Error::InvalidManifestBatchSize);
+    }
+
+    let project = db.project().await?;
+    let scan_id = db
+        .create_scan(project.id, ScanKind::ManifestGeneration)
+        .await?;
+
+    let (sender, receiver) = mpsc::channel::<ManifestEntryRecord>(MANIFEST_RECORD_CHANNEL_CAPACITY);
+
+    let root_path = project.root_path.clone();
+    let project_id = project.id;
+    let producer_cancel_token = cancel_token.clone();
+
+    let producer = task::spawn_blocking(move || {
+        produce_manifest_records(
+            project_id,
+            scan_id,
+            &root_path,
+            &sender,
+            &producer_cancel_token,
+        )
+    });
+
+    let writer_result = consume_manifest_record(db, receiver, options.db_batch_size).await;
+
+    if writer_result.is_err() {
+        cancel_token.cancel();
+    }
+
+    let producer_result = await_producer(producer).await;
+
+    finish_generation(db, scan_id, producer_result, writer_result).await
+}
+
+/// Awaits the blocking producer task.
+async fn await_producer(producer: JoinHandle<Result<ProducerReport>>) -> Result<ProducerReport> {
+    producer
+        .await
+        .map_err(|source| Error::ManifestWorkerJoin { source })?
+}
+
+/// Finishes scan lifecycle and returns final public report.
+async fn finish_generation(
+    db: &ProjectDb,
+    scan_id: ScanId,
+    producer_result: Result<ProducerReport>,
+    writer_result: Result<()>,
+) -> Result<ManifestGenerationReport> {
+    match (producer_result, writer_result) {
+        (Ok(producer_report), Ok(())) => {
+            let status = if producer_report.cancelled {
+                ScanStatus::Cancelled
+            } else {
+                ScanStatus::Completed
+            };
+
+            db.finish_scan(scan_id, status, producer_report.counters, None)
+                .await?;
+
+            Ok(ManifestGenerationReport {
+                scan_id,
+                counters: producer_report.counters,
+                cancelled: producer_report.cancelled,
+            })
+        }
+
+        (Ok(producer_report), Err(error)) => {
+            let message = error.to_string();
+
+            db.finish_scan(
+                scan_id,
+                ScanStatus::Failed,
+                producer_report.counters,
+                Some(&message),
+            )
+            .await?;
+
+            Err(error)
+        }
+
+        (Err(error), Ok(()) | Err(_)) => {
+            let message = error.to_string();
+
+            db.finish_scan(
+                scan_id,
+                ScanStatus::Failed,
+                ScanCounters::default(),
+                Some(&message),
+            )
+            .await?;
+
+            Err(error)
+        }
+    }
+}
+
+/// Produces manifest records by walking and hashing the filesystem tree.
+///
+/// This function is intended to run in a blocking worker thread.
+fn produce_manifest_records(
+    project_id: ProjectId,
+    scan_id: ScanId,
+    root_path: &Path,
+    sender: &mpsc::Sender<ManifestEntryRecord>,
+    cancel_token: &CancelToken,
+) -> Result<ProducerReport> {
+    let mut counters = ScanCounters::default();
+    let mut cancelled = false;
+
+    scan_tree(root_path, ScanOptions::default(), |entry| {
+        if cancel_token.is_cancelled() {
+            cancelled = true;
+            return Ok(ScanFlow::Stop);
+        }
+
+        match manifest_record_from_entry(project_id, scan_id, entry, &mut counters, cancel_token)? {
+            RecordProduction::Record(record) => {
+                if sender.blocking_send(record).is_err() {
+                    cancelled = cancel_token.is_cancelled();
+                    return Ok(ScanFlow::Stop);
+                }
+
+                Ok(ScanFlow::Continue)
+            }
+            RecordProduction::Cancelled => {
+                cancelled = true;
+                Ok(ScanFlow::Stop)
+            }
+        }
+    })?;
+
+    Ok(ProducerReport {
+        counters,
+        cancelled: cancelled || cancel_token.is_cancelled(),
+    })
 }
 
 /// Consumes manifest records and writes them to project database in batches.
@@ -163,9 +321,13 @@ fn hash_file_entry(
                 scan_id,
                 relative_path: entry.relative_path,
                 entry_kind: entry.kind,
-                size_bytes: entry.metadata.and_then(|metadata| metadata.size_bytes),
+                size_bytes: entry
+                    .metadata
+                    .as_ref()
+                    .and_then(|metadata| metadata.size_bytes),
                 mtime_ns: entry
                     .metadata
+                    .as_ref()
                     .and_then(|metadata| metadata.modified_time_ns),
                 readonly,
                 hash_algo: None,

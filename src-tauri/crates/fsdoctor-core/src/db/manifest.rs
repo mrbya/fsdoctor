@@ -1,3 +1,5 @@
+use sqlx::Row;
+
 use crate::{
     db::helpers::{optional_i128_to_i64, optional_u64_to_i64},
     FsEntryKind, ManifestEntryStatus, ProjectDb, ProjectId, RelativePath, Result, ScanId,
@@ -35,6 +37,28 @@ pub struct ManifestEntryRecord {
 
     /// Manifest status.
     pub status: ManifestEntryStatus,
+
+    /// Optional error message.
+    pub error_message: Option<String>,
+}
+
+/// Persisted manifest entry snapshot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ManifestEntrySnapshot {
+    /// Relative path string stored in the database.
+    pub relative_path: String,
+
+    /// Entry kind DB string.
+    pub entry_kind: String,
+
+    /// Hash algorithm DB string.
+    pub hash_algo: Option<String>,
+
+    /// Raw hash bytes.
+    pub hash: Option<Vec<u8>>,
+
+    /// Manifest status DB string.
+    pub status: String,
 
     /// Optional error message.
     pub error_message: Option<String>,
@@ -151,6 +175,44 @@ impl ProjectDb {
         tx.commit().await?;
 
         Ok(())
+    }
+
+    /// Returns manifest entries last seen by a scan.
+    ///
+    /// This is useful for reports and tests.
+    ///
+    /// # Errors
+    /// Returns [`crate::error::Error`] if the database query fails.
+    pub async fn manifest_entries_for_scan(
+        &self,
+        scan_id: ScanId,
+    ) -> Result<Vec<ManifestEntrySnapshot>> {
+        let rows = sqlx::query(
+            r"
+        SELECT relative_path, entry_kind, hash_algo, hash, status, error_message
+        FROM manifest_entries
+        WHERE last_seen_scan_id = ?1
+        ORDER BY relative_path
+        ",
+        )
+        .bind(scan_id.raw())
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut entries = Vec::with_capacity(rows.len());
+
+        for row in rows {
+            entries.push(ManifestEntrySnapshot {
+                relative_path: row.try_get("relative_path")?,
+                entry_kind: row.try_get("entry_kind")?,
+                hash_algo: row.try_get("hash_algo")?,
+                hash: row.try_get("hash")?,
+                status: row.try_get("status")?,
+                error_message: row.try_get("error_message")?,
+            });
+        }
+
+        Ok(entries)
     }
 }
 
