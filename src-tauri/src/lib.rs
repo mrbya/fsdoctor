@@ -62,7 +62,9 @@ pub mod commands;
 pub mod dto;
 /// Error mapping for Tauri commands.
 pub mod error;
-/// App state.
+/// App job handlers.
+pub mod handlers;
+/// Application state shared by Tauri commands and background jobs.
 pub mod state;
 
 /// Builds and runs Tauri application.
@@ -75,10 +77,13 @@ pub mod state;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(state::AppState::default())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             commands::create_project,
             commands::open_project,
+            commands::start_manifest_generation,
+            commands::cancel_job
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
