@@ -33,7 +33,7 @@ serde_json              = { version = "1" }
 thiserror               = { version = "2" }
 sqlx                    = { version = "0.9", features = ["sqlite", "time", "macros", "migrate", "runtime-tokio"] }
 time                    = { version = "0.3" }
-tokio                   = { version = "1", features = ["macros", "rt-multi-thread"] }
+tokio                   = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
 blake3                  = { version = "1" }
 # Dev
 criterion               = { version = "0.8" }

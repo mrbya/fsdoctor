@@ -104,4 +104,16 @@ pub enum Error {
     /// A numeric value could not be represented in `SQLite`.
     #[error("numeric value is too large to store in the database")]
     NumericOverflow,
+
+    /// Invalid manifest batch size.
+    #[error("invalid manifest batch size")]
+    InvalidManifestBatchSize,
+
+    /// Manifest generation worker failed to join.
+    #[error("manifest generation worker failed to join: {source}")]
+    ManifestWorkerJoin {
+        /// Underlying worker join error.
+        #[source]
+        source: tokio::task::JoinError,
+    },
 }

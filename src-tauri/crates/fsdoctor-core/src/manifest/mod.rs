@@ -1,4 +1,4 @@
-/// Manifest generation algorithm.
+/// Manifest generation orchestration.
 pub mod generation;
 /// Manifest model.
 pub mod model;

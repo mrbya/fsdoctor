@@ -50,6 +50,18 @@ pub enum SkipReason {
     UnsupportedFileType,
 }
 
+impl SkipReason {
+    /// Converts skip reason to a human-readable string.
+    #[must_use]
+    pub const fn to_str(self) -> &'static str {
+        match self {
+            Self::Symlink => "symbolic link skipped by policy",
+            Self::ReparsePoint => "reparse point skipped by policy",
+            Self::UnsupportedFileType => "unsupported filesystem entry type skipped by policy",
+        }
+    }
+}
+
 /// Filesystem entry emitted by the scanner.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FsEntry {
