@@ -1,7 +1,7 @@
 use crate::{db::scan::ScanCounters, model::ScanId};
 
 /// Default manifest generation DB batch size.
-const DEFAULT_DB_BATCH_SIZE: usize = 512;
+pub const DEFAULT_DB_BATCH_SIZE: usize = 512;
 
 /// Options for manifest generation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

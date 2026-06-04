@@ -93,6 +93,9 @@ pub use hash::cancel::CancelToken;
 pub use hash::digest::{FileDigest, HashAlgorithm};
 pub use hash::file::{hash_file, FileFingerprint, HashOptions, HashOutcome, HashedFile};
 pub use manifest::generation::generate_manifest;
+pub use manifest::model::{
+    ManifestGenerationOptions, ManifestGenerationReport, DEFAULT_DB_BATCH_SIZE,
+};
 pub use manifest::progress::{ManifestGenerationPhase, ManifestGenerationProgress};
 pub use model::{
     CreateProjectRequest, ManifestEntryStatus, OpenProjectRequest, Project, ProjectId, ScanId,
