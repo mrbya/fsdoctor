@@ -56,7 +56,7 @@ pub async fn open_project(request: OpenProjectRequestDto) -> CommandResult<Proje
 /// # Errors
 /// Returns [`CommandError`] if the job cannot be registered.
 #[tauri::command]
-pub fn start_manifest_generation(
+pub async fn start_manifest_generation(
     request: StartManifestGenerationRequestDto,
     app: AppHandle,
     state: State<'_, AppState>,
@@ -85,7 +85,7 @@ pub fn start_manifest_generation(
 /// # Errors
 /// Returns [`CommandError`] if the application job registry cannot be accessed.
 #[tauri::command]
-pub fn cancel_job(
+pub async fn cancel_job(
     request: CancelJobRequestDto,
     state: State<'_, AppState>,
 ) -> CommandResult<CancelJobResultDto> {

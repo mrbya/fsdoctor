@@ -11,6 +11,10 @@ import type {
   Project,
   CreateProjectRequest,
   OpenProjectRequest,
+  StartManifestGenerationRequest,
+  JobStarted,
+  CancelJobRequest,
+  CancelJobResult,
 } from "$lib/types";
 
 /**
@@ -35,4 +39,28 @@ export async function openProject(
   request: OpenProjectRequest,
 ): Promise<Project> {
   return invoke<Project>("open_project", { request });
+}
+
+/**
+ * Starts manifest generation as a backend job.
+ *
+ * @returns Job id of the started manifest generation job.
+ * @throws If the backend fails to start the job.
+ */
+export async function startManifestGeneration(
+  request: StartManifestGenerationRequest,
+): Promise<JobStarted> {
+  return invoke<JobStarted>("start_manifest_generation", { request });
+}
+
+/**
+ * Requests cancellation of a background job.
+ *
+ * @returns Cancellation result.
+ * @throws If the backend cannot access job state.
+ */
+export async function cancelJob(
+  request: CancelJobRequest,
+): Promise<CancelJobResult> {
+  return invoke<CancelJobResult>("cancel_job", { request });
 }
