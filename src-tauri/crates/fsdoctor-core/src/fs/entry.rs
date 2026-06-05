@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use crate::error::{Error, Result};
 use crate::RelativePath;
 
 /// Filesystem entry kind recognized by `FSDoctor`.
@@ -16,6 +17,33 @@ pub enum FsEntryKind {
 
     /// Other unsupported filesystem entry.
     Other,
+}
+
+impl FsEntryKind {
+    /// Converts fs entry kind to a stable DB string.
+    #[must_use]
+    pub const fn as_db_str(self) -> &'static str {
+        match self {
+            Self::File => "file",
+            Self::Directory => "directory",
+            Self::Symlink => "symlink",
+            Self::Other => "other",
+        }
+    }
+
+    /// Converts a stable fs entry kind DB string to `FsEntryKind`.
+    ///
+    /// # Errors
+    /// Returns [`Error::InvalidProjectDatabase`] on invalid db strings/unknown fs kinds.
+    pub fn from_db_str(value: &str) -> Result<Self> {
+        match value {
+            "file" => Ok(Self::File),
+            "directory" => Ok(Self::Directory),
+            "symlink" => Ok(Self::Symlink),
+            "other" => Ok(Self::Other),
+            _ => Err(Error::InvalidProjectDatabase),
+        }
+    }
 }
 
 /// Scanner handling status for an entry.

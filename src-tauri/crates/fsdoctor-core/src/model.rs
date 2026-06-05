@@ -165,3 +165,52 @@ impl ManifestEntryStatus {
         }
     }
 }
+
+/// Integrity check result kind.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CheckResultKind {
+    /// Entry matches the manifest.
+    Ok,
+
+    /// Entry exists in the manifest but is missing from the current tree.
+    Missing,
+
+    /// Entry exists in the current tree but not in the manifest.
+    New,
+
+    /// File hash differs from the manifest.
+    HashMismatch,
+
+    /// File size differs from the manifest.
+    SizeMismatch,
+
+    /// Entry kind differs from the manifest.
+    TypeChanged,
+
+    /// Current entry could not be read.
+    Unreadable,
+
+    /// File changed while it was being checked.
+    ChangedDuringCheck,
+
+    /// Entry was skipped by policy.
+    Skipped,
+}
+
+impl CheckResultKind {
+    /// Stable DB string.
+    #[must_use]
+    pub const fn as_db_str(self) -> &'static str {
+        match self {
+            Self::Ok => "ok",
+            Self::Missing => "missing",
+            Self::New => "new",
+            Self::HashMismatch => "hash_mismatch",
+            Self::SizeMismatch => "size_mismatch",
+            Self::TypeChanged => "type_changed",
+            Self::Unreadable => "unreadable",
+            Self::ChangedDuringCheck => "changed_during_check",
+            Self::Skipped => "skipped",
+        }
+    }
+}

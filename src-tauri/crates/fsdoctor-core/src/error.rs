@@ -116,4 +116,19 @@ pub enum Error {
         #[source]
         source: tokio::task::JoinError,
     },
+
+    /// No completed manifest is available for integrity checking.
+    #[error("no completed manifest available for this project")]
+    NoCompletedManifest,
+
+    /// Invalid integrity-check DB batch size.
+    #[error("invalid integrity check database batch size")]
+    InvalidIntegrityCheckBatchSize,
+
+    /// Integrity-check worker task failed.
+    #[error("integrity check worker failed: {source}")]
+    IntegrityCheckWorkerJoin {
+        #[source]
+        source: tokio::task::JoinError,
+    },
 }

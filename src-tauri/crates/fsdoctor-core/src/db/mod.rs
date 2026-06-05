@@ -1,3 +1,5 @@
+/// DB model to check expected manifest entries.
+pub mod check;
 /// DB client helpers.
 pub mod helpers;
 /// DB Manifest entry management.

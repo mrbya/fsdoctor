@@ -66,6 +66,8 @@
     clippy::verbose_file_reads
 )]
 
+/// `FSDoctor` backup integrity check engine.
+pub(crate) mod check;
 /// `FSDoctor` `SQLite` db client.
 pub(crate) mod db;
 /// `FSDoctor` error and result types.
@@ -82,27 +84,40 @@ pub(crate) mod model;
 pub(crate) mod path;
 
 // Re-exports.
+// Check
+pub use check::model::{
+    IntegrityCheckOptions, IntegrityCheckReport, IntegrityCheckSummary, DEFAULT_CHECK_DB_BATCH_SIZE,
+};
+// Db
+pub use db::check::{CheckResultRecord, ExpectedManifestEntry};
 pub use db::manifest::ManifestEntrySnapshot;
 pub use db::project::ProjectDb;
+// Error
 pub use error::{Error, Result};
+// Fs
 pub use fs::entry::{FsEntry, FsEntryKind, FsEntryStatus, FsMetadata, SkipReason};
 pub use fs::metadata::collect_metadata;
 pub use fs::platform::is_reparse_point;
 pub use fs::scanner::{scan_tree, ScanFlow, ScanOptions, ScanSummary};
+// Hash
 pub use hash::cancel::CancelToken;
 pub use hash::digest::{FileDigest, HashAlgorithm};
 pub use hash::file::{hash_file, FileFingerprint, HashOptions, HashOutcome, HashedFile};
+// Model
+pub use model::{
+    CheckResultKind, CreateProjectRequest, ManifestEntryStatus, OpenProjectRequest, Project,
+    ProjectId, ScanId, ScanKind, ScanStatus, CURRENT_PROJECT_FORMAT_VERSION,
+};
+// Manifestt
 pub use manifest::generation::generate_manifest;
 pub use manifest::model::{
     ManifestGenerationOptions, ManifestGenerationReport, DEFAULT_DB_BATCH_SIZE,
 };
 pub use manifest::progress::{ManifestGenerationPhase, ManifestGenerationProgress};
-pub use model::{
-    CreateProjectRequest, ManifestEntryStatus, OpenProjectRequest, Project, ProjectId, ScanId,
-    ScanKind, ScanStatus, CURRENT_PROJECT_FORMAT_VERSION,
-};
+// Path
 pub use path::{db_text_to_path, path_to_db_text, RelativePath};
 
+// Tests
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::panic)]
 mod tests;
