@@ -85,9 +85,11 @@ pub(crate) mod path;
 
 // Re-exports.
 // Check
+pub use check::engine::{run_integrity_check, run_integrity_check_with_progress};
 pub use check::model::{
     IntegrityCheckOptions, IntegrityCheckReport, IntegrityCheckSummary, DEFAULT_CHECK_DB_BATCH_SIZE,
 };
+pub use check::progress::{IntegrityCheckPhase, IntegrityCheckProgress};
 // Db
 pub use db::check::{CheckResultRecord, ExpectedManifestEntry};
 pub use db::manifest::ManifestEntrySnapshot;

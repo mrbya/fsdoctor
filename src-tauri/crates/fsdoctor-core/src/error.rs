@@ -128,6 +128,7 @@ pub enum Error {
     /// Integrity-check worker task failed.
     #[error("integrity check worker failed: {source}")]
     IntegrityCheckWorkerJoin {
+        /// Underlying worker join error.
         #[source]
         source: tokio::task::JoinError,
     },
