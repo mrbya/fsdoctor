@@ -592,17 +592,17 @@ Avoid exact percentage in the MVP unless a pre-scan is added. A one-pass scanner
 
 ### Acceptance criteria
 
-- [ ] User can create a project and generate a manifest for a selected folder.
-- [ ] Manifest entries are persisted into SQLite.
-- [ ] Regular files include BLAKE3 hashes.
-- [ ] Directories are recorded without content hashes.
-- [ ] Symlinks/reparse points are recorded/skipped according to policy.
-- [ ] Unreadable files are recorded and included in the report.
-- [ ] Scan progress is visible in the UI.
+- [x] User can create a project and generate a manifest for a selected folder.
+- [x] Manifest entries are persisted into SQLite.
+- [x] Regular files include BLAKE3 hashes.
+- [x] Directories are recorded without content hashes.
+- [x] Symlinks/reparse points are recorded/skipped according to policy.
+- [x] Unreadable files are recorded and included in the report.
+- [?] Scan progress is visible in the UI.
 - [ ] Manifest generation can be cancelled.
-- [ ] Cancelled scans are marked as cancelled in the DB.
-- [ ] Failed scans are marked as failed with an error message.
-- [ ] Running the manifest generation twice updates existing entries without duplicating paths.
+- [x] Cancelled scans are marked as cancelled in the DB.
+- [x] Failed scans are marked as failed with an error message.
+- [?] Running the manifest generation twice updates existing entries without duplicating paths.
 
 ---
 
@@ -668,16 +668,16 @@ For the MVP, do not hash files whose size already differs. Add a later advanced 
 
 ### Acceptance criteria
 
-- [ ] Unchanged files are reported as `OK`.
-- [ ] Deleted files are reported as `MISSING`.
-- [ ] Added files are reported as `NEW`.
-- [ ] Modified same-size files are reported as `HASH_MISMATCH`.
-- [ ] Modified different-size files are reported as `SIZE_MISMATCH`.
-- [ ] File/directory replacements are reported as `TYPE_CHANGED`.
-- [ ] Unreadable current files are reported as `UNREADABLE`.
-- [ ] Changed-during-check files are reported as `CHANGED_DURING_CHECK`.
-- [ ] Results are persisted in `check_results`.
-- [ ] Integrity check can be cancelled.
+- [x] Unchanged files are reported as `OK`.
+- [x] Deleted files are reported as `MISSING`.
+- [x] Added files are reported as `NEW`.
+- [x] Modified same-size files are reported as `HASH_MISMATCH`.
+- [x] Modified different-size files are reported as `SIZE_MISMATCH`.
+- [x] File/directory replacements are reported as `TYPE_CHANGED`.
+- [x] Unreadable current files are reported as `UNREADABLE`.
+- [x] Changed-during-check files are reported as `CHANGED_DURING_CHECK`.
+- [?] Results are persisted in `check_results`.
+- [x] Integrity check can be cancelled.
 - [ ] Check summary can be loaded after app restart.
 
 ---
