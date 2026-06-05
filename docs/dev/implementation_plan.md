@@ -598,7 +598,7 @@ Avoid exact percentage in the MVP unless a pre-scan is added. A one-pass scanner
 - [x] Directories are recorded without content hashes.
 - [x] Symlinks/reparse points are recorded/skipped according to policy.
 - [x] Unreadable files are recorded and included in the report.
-- [?] Scan progress is visible in the UI.
+- [ ] Scan progress is visible in the UI.
 - [ ] Manifest generation can be cancelled.
 - [x] Cancelled scans are marked as cancelled in the DB.
 - [x] Failed scans are marked as failed with an error message.
