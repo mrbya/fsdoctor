@@ -12,7 +12,6 @@
       },
       eyebrow: {
         control: { type: "text" },
-        defaultValue: "FsDoctor",
       },
       description: {
         control: { type: "text" },

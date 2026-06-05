@@ -3,7 +3,7 @@
   import { StatusBadge } from "$lib/components";
 
   const { Story } = defineMeta({
-    title: "Componets/StatusBadge",
+    title: "Components/StatusBadge",
     component: StatusBadge,
     tags: ["autodocs"],
     argTypes: {

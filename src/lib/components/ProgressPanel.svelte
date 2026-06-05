@@ -25,14 +25,9 @@
 <style>
   .progress-panel {
     border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    padding: var(--space-lg);
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--accent) 6%, var(--bg-raised)) 0%,
-      var(--bg-muted) 100%
-    );
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 3%);
+    border-radius: var(--radius-lg);
+    padding: 0.9rem;
+    background: var(--bg-soft);
   }
 
   .eyebrow,
@@ -51,10 +46,11 @@
   h2 {
     margin-top: var(--space-2xs);
     font-size: var(--font-size-xl);
+    line-height: 1.3;
   }
 
   p {
-    margin-top: var(--space-sm);
+    margin-top: var(--space-xs);
     color: var(--text-muted);
   }
 </style>

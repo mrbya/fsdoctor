@@ -16,7 +16,7 @@
 </script>
 
 <Story name="Default">
-  <Card>
+  <Card title="Section title">
     <p>This is a default card</p>
   </Card>
 </Story>
@@ -46,7 +46,7 @@
 </Story>
 
 <Story name="WithComplexContent">
-  <Card>
+  <Card title="Recent files">
     <table class="entry-table">
       <thead>
         <tr>
@@ -78,19 +78,19 @@
 
 <Story name="AllTones">
   <div class="tones-row">
-    <Card>
+    <Card title="Default">
       <p>default</p>
     </Card>
-    <Card tone="success">
+    <Card tone="success" title="Success">
       <p>success</p>
     </Card>
-    <Card tone="warning">
+    <Card tone="warning" title="Warning">
       <p>warning</p>
     </Card>
-    <Card tone="danger">
+    <Card tone="danger" title="Danger">
       <p>danger</p>
     </Card>
-    <Card tone="info">
+    <Card tone="info" title="Info">
       <p>info</p>
     </Card>
   </div>

@@ -36,57 +36,64 @@
 
 <div class="shell">
   <nav class="sidebar">
-    <ul class="nav-list">
-      {#each navItems as item (item.id)}
-        <li>
-          <button
-            class="nav-button"
-            class:active={activeView === item.id}
-            aria-current={activeView === item.id ? "page" : undefined}
-            aria-label={item.label}
-            title={item.label}
-            onclick={() => (activeView = item.id)}
-          >
-            <span class="icon">
-              <item.icon size={20} strokeWidth={1.75} />
-            </span>
-          </button>
-        </li>
-      {/each}
-    </ul>
+    <div class="sidebar-inner">
+      <ul class="nav-list">
+        {#each navItems as item (item.id)}
+          <li>
+            <button
+              class="nav-button"
+              class:active={activeView === item.id}
+              aria-current={activeView === item.id ? "page" : undefined}
+              aria-label={item.label}
+              title={item.label}
+              onclick={() => (activeView = item.id)}
+            >
+              <span class="icon">
+                <item.icon size={18} strokeWidth={1.75} />
+              </span>
+            </button>
+          </li>
+        {/each}
+      </ul>
+    </div>
   </nav>
 
   <main class="content">
-    {#if activeView === "dashboard"}
-      <Dashboard />
-    {:else if activeView === "create-manifest"}
-      <CreateManifest />
-    {:else if activeView === "check-backup"}
-      <CheckBackup />
-    {:else if activeView === "reports"}
-      <ReportHistory />
-    {:else if activeView === "settings"}
-      <Settings />
-    {/if}
+    <div class="content-inner">
+      {#if activeView === "dashboard"}
+        <Dashboard />
+      {:else if activeView === "create-manifest"}
+        <CreateManifest />
+      {:else if activeView === "check-backup"}
+        <CheckBackup />
+      {:else if activeView === "reports"}
+        <ReportHistory />
+      {:else if activeView === "settings"}
+        <Settings />
+      {/if}
+    </div>
   </main>
 </div>
 
 <style>
   .shell {
     display: grid;
-    grid-template-columns: 4.5rem minmax(0, 1fr);
+    grid-template-columns: 4rem minmax(0, 1fr);
     min-height: 100vh;
   }
 
   .sidebar {
-    width: 72px;
     flex-shrink: 0;
     background: var(--bg-raised);
     border-right: 1px solid var(--border);
+  }
+
+  .sidebar-inner {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    padding: 0.5rem 0;
+    align-items: center;
+    gap: var(--space-md);
+    padding: 0.75rem 0.5rem;
   }
 
   .nav-list {
@@ -94,7 +101,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    padding: 0 0.5rem;
+    width: 100%;
   }
 
   .nav-button {
@@ -102,24 +109,27 @@
     align-items: center;
     justify-content: center;
     width: 100%;
-    aspect-ratio: 1;
+    min-height: 2.5rem;
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     border-radius: var(--radius);
     color: var(--text-muted);
     cursor: pointer;
     transition:
       background 0.15s,
-      color 0.15s;
+      color 0.15s,
+      border-color 0.15s;
   }
 
   .nav-button:hover {
     background: var(--bg-input);
+    border-color: var(--border);
     color: var(--text);
   }
 
   .nav-button.active {
-    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--bg-input));
+    border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
     color: var(--accent);
   }
 
@@ -129,10 +139,14 @@
   }
 
   .content {
-    flex: 1;
     overflow-y: auto;
     background: var(--bg);
     padding: var(--space-lg);
+  }
+
+  .content-inner {
+    width: min(72rem, 100%);
+    margin: 0 auto;
   }
 
   @media (max-width: 48rem) {
@@ -144,19 +158,27 @@
       width: 100%;
       border-right: 0;
       border-bottom: 1px solid var(--border);
-      justify-content: flex-start;
+    }
+
+    .sidebar-inner {
+      flex-direction: row;
+      justify-content: space-between;
       padding: var(--space-sm);
     }
 
     .nav-list {
       flex-direction: row;
-      justify-content: space-between;
-      padding: 0;
+      justify-content: flex-end;
+      gap: var(--space-2xs);
     }
 
     .nav-button {
-      aspect-ratio: auto;
-      min-height: 3rem;
+      min-width: 2.75rem;
+      min-height: 2.75rem;
+    }
+
+    .content {
+      padding: var(--space-md);
     }
   }
 </style>

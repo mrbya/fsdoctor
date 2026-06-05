@@ -1,6 +1,6 @@
 <script lang="ts">
   let {
-    eyebrow = "FsDoctor",
+    eyebrow,
     title,
     description,
   }: {
@@ -11,7 +11,10 @@
 </script>
 
 <header class="page-header">
-  <p class="eyebrow">{eyebrow}</p>
+  {#if eyebrow !== undefined}
+    <p class="eyebrow">{eyebrow}</p>
+  {/if}
+
   <h1>{title}</h1>
 
   {#if description !== undefined}
@@ -22,26 +25,29 @@
 <style>
   .page-header {
     display: grid;
-    gap: var(--space-xs);
+    gap: var(--space-2xs);
   }
 
   .eyebrow {
     margin: 0;
     color: var(--accent);
     text-transform: uppercase;
+    font-size: var(--font-size-xs);
     letter-spacing: 0.08em;
   }
 
   h1 {
     margin: 0;
     color: var(--text);
-    font-size: clamp(1.75rem, 4vw, 3rem);
+    font-size: var(--font-size-2xl);
+    font-weight: 600;
+    line-height: 1.25;
   }
 
   .description {
-    max-width: 72ch;
+    max-width: 68ch;
     margin: 0;
     color: var(--text-muted);
-    line-height: 1.6;
+    line-height: 1.5;
   }
 </style>

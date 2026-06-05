@@ -3,6 +3,7 @@
     Button,
     Card,
     EmptyState,
+    MetricGrid,
     PageHeader,
     ProgressPanel,
     StatusBadge,
@@ -10,6 +11,178 @@
   import { integrityCheckStore } from "$lib/stores/integrityCheck.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
   import { formatBytes, formatCount } from "$lib/utils/helpers";
+
+  const missingManifest = $derived(
+    integrityCheckStore.error?.kind === "no_completed_manifest",
+  );
+
+  const liveMetrics = $derived.by(() => {
+    const progress = integrityCheckStore.progress;
+
+    if (progress === null) {
+      return [];
+    }
+
+    return [
+      { label: "Files seen", value: formatCount(progress.filesSeen) },
+      { label: "Directories seen", value: formatCount(progress.dirsSeen) },
+      { label: "Data checked", value: formatBytes(progress.bytesSeen) },
+      { label: "Files hashed", value: formatCount(progress.filesHashed) },
+      { label: "Results written", value: formatCount(progress.resultsWritten) },
+      {
+        label: "OK",
+        value: formatCount(progress.summary.ok),
+        tone: "success" as const,
+      },
+      {
+        label: "Missing",
+        value: formatCount(progress.summary.missing),
+        tone:
+          progress.summary.missing > 0
+            ? ("danger" as const)
+            : ("default" as const),
+      },
+      {
+        label: "New",
+        value: formatCount(progress.summary.new),
+        tone:
+          progress.summary.new > 0
+            ? ("warning" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Hash mismatch",
+        value: formatCount(progress.summary.hashMismatch),
+        tone:
+          progress.summary.hashMismatch > 0
+            ? ("danger" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Size mismatch",
+        value: formatCount(progress.summary.sizeMismatch),
+        tone:
+          progress.summary.sizeMismatch > 0
+            ? ("danger" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Type changed",
+        value: formatCount(progress.summary.typeChanged),
+        tone:
+          progress.summary.typeChanged > 0
+            ? ("warning" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Unreadable",
+        value: formatCount(progress.summary.unreadable),
+        tone:
+          progress.summary.unreadable > 0
+            ? ("warning" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Changed during check",
+        value: formatCount(progress.summary.changedDuringCheck),
+        tone:
+          progress.summary.changedDuringCheck > 0
+            ? ("warning" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Skipped",
+        value: formatCount(progress.summary.skipped),
+        tone:
+          progress.summary.skipped > 0
+            ? ("warning" as const)
+            : ("default" as const),
+      },
+    ];
+  });
+
+  const reportMetrics = $derived.by(() => {
+    const report = integrityCheckStore.report;
+
+    if (report === null) {
+      return [];
+    }
+
+    return [
+      { label: "Check scan ID", value: formatCount(report.scanId) },
+      {
+        label: "Baseline manifest scan",
+        value: formatCount(report.manifestScanId),
+      },
+      {
+        label: "OK",
+        value: formatCount(report.summary.ok),
+        tone: "success" as const,
+      },
+      {
+        label: "Missing",
+        value: formatCount(report.summary.missing),
+        tone:
+          report.summary.missing > 0
+            ? ("danger" as const)
+            : ("default" as const),
+      },
+      {
+        label: "New",
+        value: formatCount(report.summary.new),
+        tone:
+          report.summary.new > 0 ? ("warning" as const) : ("default" as const),
+      },
+      {
+        label: "Hash mismatch",
+        value: formatCount(report.summary.hashMismatch),
+        tone:
+          report.summary.hashMismatch > 0
+            ? ("danger" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Size mismatch",
+        value: formatCount(report.summary.sizeMismatch),
+        tone:
+          report.summary.sizeMismatch > 0
+            ? ("danger" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Type changed",
+        value: formatCount(report.summary.typeChanged),
+        tone:
+          report.summary.typeChanged > 0
+            ? ("warning" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Unreadable",
+        value: formatCount(report.summary.unreadable),
+        tone:
+          report.summary.unreadable > 0
+            ? ("warning" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Changed during check",
+        value: formatCount(report.summary.changedDuringCheck),
+        tone:
+          report.summary.changedDuringCheck > 0
+            ? ("warning" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Skipped",
+        value: formatCount(report.summary.skipped),
+        tone:
+          report.summary.skipped > 0
+            ? ("warning" as const)
+            : ("default" as const),
+      },
+    ];
+  });
 
   async function startCheck(): Promise<void> {
     if (projectStore.dbPath === null) {
@@ -29,19 +202,19 @@
     }
 
     if (status === "cancelling") {
-      return "Cancellation requested. FSDoctor is finishing the current safe step.";
+      return "Cancellation was requested. FSDoctor will stop after the current safe step.";
     }
 
     if (status === "completed") {
-      return "Integrity check completed.";
+      return "Integrity check completed and the final report is available below.";
     }
 
     if (status === "cancelled") {
-      return "Integrity check was cancelled.";
+      return "Integrity check stopped before completion.";
     }
 
     if (status === "failed") {
-      return "Integrity check failed.";
+      return "Integrity check failed before a final report could be written.";
     }
 
     return "No integrity check is running.";
@@ -78,7 +251,7 @@
       return "success";
     }
 
-    if (status === "cancelled") {
+    if (status === "cancelled" || status === "cancelling") {
       return "warning";
     }
 
@@ -89,9 +262,23 @@
     return "info";
   }
 
-  const missingManifest = $derived(
-    integrityCheckStore.error?.kind === "no_completed_manifest",
-  );
+  function statusCardTone(
+    status: string,
+  ): "default" | "success" | "warning" | "danger" {
+    if (status === "completed") {
+      return "success";
+    }
+
+    if (status === "cancelled" || status === "cancelling") {
+      return "warning";
+    }
+
+    if (status === "failed") {
+      return "danger";
+    }
+
+    return "default";
+  }
 </script>
 
 <div class="view">
@@ -101,59 +288,89 @@
   />
 
   {#if projectStore.project === null}
-    <Card>
+    <Card title="Project required">
       <EmptyState
         title="No project open"
         description="Create or open an FSDoctor project before running an integrity check."
       />
     </Card>
   {:else}
-    <Card>
-      <div class="action-card">
-        <div class="section-heading compact">
-          <StatusBadge label="Project open" tone="success" />
-          <h2>{projectStore.project.name}</h2>
-          <p>{projectStore.project.rootPath}</p>
+    <div class="workflow-stack">
+      <Card title="Current project">
+        <div class="project-summary">
+          <div class="project-heading">
+            <StatusBadge label="Project open" tone="success" />
+            <h2>{projectStore.project.name}</h2>
+          </div>
+
+          <dl class="project-meta">
+            <div>
+              <dt>Backup root</dt>
+              <dd>{projectStore.project.rootPath}</dd>
+            </div>
+            <div>
+              <dt>Database path</dt>
+              <dd>{projectStore.dbPath}</dd>
+            </div>
+          </dl>
         </div>
+      </Card>
 
-        <div class="actions">
-          <Button
-            type="button"
-            disabled={integrityCheckStore.isActive ||
-              projectStore.dbPath === null}
-            onclick={startCheck}
-          >
-            Start integrity check
-          </Button>
+      <Card title="Integrity check">
+        <div class="stack">
+          <div class="section-heading">
+            <p>
+              Compare the current backup tree against the latest completed
+              integrity record and summarize anything missing, new, changed,
+              unreadable, or skipped.
+            </p>
+          </div>
 
-          {#if integrityCheckStore.isActive}
-            <Button type="button" variant="secondary" onclick={cancelCheck}>
-              Cancel check
+          <div class="actions">
+            <Button
+              type="button"
+              disabled={integrityCheckStore.isActive ||
+                projectStore.dbPath === null}
+              onclick={startCheck}
+            >
+              Start integrity check
             </Button>
+
+            {#if integrityCheckStore.isActive}
+              <Button
+                type="button"
+                variant="secondary"
+                loading={integrityCheckStore.status === "cancelling"}
+                onclick={cancelCheck}
+              >
+                Cancel check
+              </Button>
+            {/if}
+          </div>
+
+          {#if integrityCheckStore.status === "idle"}
+            <p class="supporting-text">
+              Progress appears here once the check starts. FSDoctor shows actual
+              phases and counters while the scan is still running.
+            </p>
           {/if}
         </div>
-
-        {#if integrityCheckStore.status === "idle"}
-          <p class="supporting-text">
-            Run a check against the latest completed integrity record. FSDoctor
-            compares the current backup tree and reports anything missing, new,
-            changed, unreadable, or skipped.
-          </p>
-        {/if}
-      </div>
-    </Card>
+      </Card>
+    </div>
   {/if}
 
   {#if integrityCheckStore.status !== "idle"}
-    <Card tone={integrityCheckStore.status === "failed" ? "danger" : "default"}>
-      <div class="stack-lg" aria-live="polite">
+    <Card
+      title="Integrity job"
+      tone={statusCardTone(integrityCheckStore.status)}
+    >
+      <div class="stack" aria-live="polite">
         <StatusBadge
           label={integrityCheckStore.status}
           tone={statusTone(integrityCheckStore.status)}
         />
 
         <ProgressPanel
-          eyebrow="Integrity check"
           title={integrityCheckStore.progress === null
             ? "Preparing check"
             : phaseText(integrityCheckStore.progress.phase)}
@@ -161,12 +378,12 @@
         />
 
         {#if integrityCheckStore.progress !== null}
-          <section class="panel">
+          <section class="detail-section">
             <div class="section-heading compact">
               <h2>Live progress</h2>
               <p>
-                The current counters stay visible while results are being
-                written.
+                The current counters remain visible while the final results are
+                being written.
               </p>
             </div>
 
@@ -177,176 +394,27 @@
               </div>
             {/if}
 
-            <dl class="summary-grid">
-              <div>
-                <dt>Files seen</dt>
-                <dd>{formatCount(integrityCheckStore.progress.filesSeen)}</dd>
-              </div>
-              <div>
-                <dt>Directories seen</dt>
-                <dd>{formatCount(integrityCheckStore.progress.dirsSeen)}</dd>
-              </div>
-              <div>
-                <dt>Data checked</dt>
-                <dd>{formatBytes(integrityCheckStore.progress.bytesSeen)}</dd>
-              </div>
-              <div>
-                <dt>Files hashed</dt>
-                <dd>{formatCount(integrityCheckStore.progress.filesHashed)}</dd>
-              </div>
-              <div>
-                <dt>Results written</dt>
-                <dd>
-                  {formatCount(integrityCheckStore.progress.resultsWritten)}
-                </dd>
-              </div>
-              <div>
-                <dt>OK</dt>
-                <dd>{formatCount(integrityCheckStore.progress.summary.ok)}</dd>
-              </div>
-              <div>
-                <dt>Missing</dt>
-                <dd>
-                  {formatCount(integrityCheckStore.progress.summary.missing)}
-                </dd>
-              </div>
-              <div>
-                <dt>New</dt>
-                <dd>{formatCount(integrityCheckStore.progress.summary.new)}</dd>
-              </div>
-              <div>
-                <dt>Hash mismatch</dt>
-                <dd>
-                  {formatCount(
-                    integrityCheckStore.progress.summary.hashMismatch,
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt>Size mismatch</dt>
-                <dd>
-                  {formatCount(
-                    integrityCheckStore.progress.summary.sizeMismatch,
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt>Type changed</dt>
-                <dd>
-                  {formatCount(
-                    integrityCheckStore.progress.summary.typeChanged,
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt>Unreadable</dt>
-                <dd>
-                  {formatCount(integrityCheckStore.progress.summary.unreadable)}
-                </dd>
-              </div>
-              <div>
-                <dt>Changed during check</dt>
-                <dd>
-                  {formatCount(
-                    integrityCheckStore.progress.summary.changedDuringCheck,
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt>Skipped</dt>
-                <dd>
-                  {formatCount(integrityCheckStore.progress.summary.skipped)}
-                </dd>
-              </div>
-            </dl>
+            <MetricGrid items={liveMetrics} />
           </section>
         {/if}
 
         {#if integrityCheckStore.report !== null}
-          <section class="panel final-summary">
+          <section class="detail-section final-summary">
             <div class="section-heading compact">
               <h2>Final summary</h2>
               <p>The latest finished check is summarized below.</p>
             </div>
 
-            <dl class="summary-grid">
-              <div>
-                <dt>Check scan ID</dt>
-                <dd>{formatCount(integrityCheckStore.report.scanId)}</dd>
-              </div>
-              <div>
-                <dt>Baseline manifest scan</dt>
-                <dd>
-                  {formatCount(integrityCheckStore.report.manifestScanId)}
-                </dd>
-              </div>
-              <div>
-                <dt>OK</dt>
-                <dd>{formatCount(integrityCheckStore.report.summary.ok)}</dd>
-              </div>
-              <div>
-                <dt>Missing</dt>
-                <dd>
-                  {formatCount(integrityCheckStore.report.summary.missing)}
-                </dd>
-              </div>
-              <div>
-                <dt>New</dt>
-                <dd>{formatCount(integrityCheckStore.report.summary.new)}</dd>
-              </div>
-              <div>
-                <dt>Hash mismatch</dt>
-                <dd>
-                  {formatCount(integrityCheckStore.report.summary.hashMismatch)}
-                </dd>
-              </div>
-              <div>
-                <dt>Size mismatch</dt>
-                <dd>
-                  {formatCount(integrityCheckStore.report.summary.sizeMismatch)}
-                </dd>
-              </div>
-              <div>
-                <dt>Type changed</dt>
-                <dd>
-                  {formatCount(integrityCheckStore.report.summary.typeChanged)}
-                </dd>
-              </div>
-              <div>
-                <dt>Unreadable</dt>
-                <dd>
-                  {formatCount(integrityCheckStore.report.summary.unreadable)}
-                </dd>
-              </div>
-              <div>
-                <dt>Changed during check</dt>
-                <dd>
-                  {formatCount(
-                    integrityCheckStore.report.summary.changedDuringCheck,
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt>Skipped</dt>
-                <dd>
-                  {formatCount(integrityCheckStore.report.summary.skipped)}
-                </dd>
-              </div>
-            </dl>
+            <MetricGrid items={reportMetrics} />
           </section>
         {/if}
 
         {#if integrityCheckStore.error !== null}
-          <section class="panel error-panel">
+          <section class="detail-section error-section">
             <StatusBadge
               label={missingManifest ? "Manifest required" : "Check failed"}
               tone={missingManifest ? "warning" : "danger"}
             />
-            <h2>
-              {missingManifest
-                ? "No integrity record yet"
-                : "Something went wrong"}
-            </h2>
             <p>{integrityCheckStore.error.message}</p>
 
             {#if integrityCheckStore.error.details !== null}
@@ -368,9 +436,32 @@
     gap: var(--space-lg);
   }
 
-  .action-card {
+  .workflow-stack,
+  .stack,
+  .project-summary,
+  .project-heading,
+  .section-heading,
+  .detail-section {
     display: grid;
-    gap: var(--space-md);
+    gap: var(--space-sm);
+  }
+
+  .section-heading.compact {
+    gap: var(--space-2xs);
+  }
+
+  h2,
+  p {
+    margin: 0;
+  }
+
+  h2 {
+    font-size: var(--font-size-lg);
+    line-height: 1.35;
+  }
+
+  p {
+    color: var(--text-muted);
   }
 
   .actions {
@@ -379,85 +470,53 @@
     gap: var(--space-sm);
   }
 
-  .stack-lg,
-  .panel {
-    display: grid;
-    gap: var(--space-md);
+  .supporting-text {
+    font-size: var(--font-size-sm);
   }
 
-  .section-heading {
+  .project-meta {
     display: grid;
-    gap: var(--space-xs);
+    gap: var(--space-sm);
   }
 
-  .section-heading.compact {
+  .project-meta div {
+    display: grid;
     gap: var(--space-2xs);
   }
 
-  .supporting-text {
+  .project-meta dt,
+  .path-label {
+    color: var(--text-muted);
     font-size: var(--font-size-sm);
+  }
+
+  .project-meta dd {
+    margin: 0;
+    color: var(--text);
+    overflow-wrap: anywhere;
   }
 
   .path-block {
     display: grid;
     gap: var(--space-2xs);
-    padding: var(--space-md);
+    padding: 0.75rem;
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--bg-muted);
-  }
-
-  .path-label,
-  .summary-grid dt {
-    color: var(--text-muted);
-    font-size: var(--font-size-sm);
+    border-radius: var(--radius);
+    background: var(--bg-soft);
   }
 
   .path-block code {
+    color: var(--text);
     overflow-wrap: anywhere;
-    color: var(--text);
   }
 
-  .summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-    gap: var(--space-sm);
-  }
-
-  .summary-grid div {
-    display: grid;
-    gap: var(--space-2xs);
-    padding: var(--space-md);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: color-mix(in srgb, var(--bg-raised), transparent 12%);
-  }
-
-  .summary-grid dd {
-    margin: 0;
-    color: var(--text);
-    font-size: var(--font-size-lg);
-  }
-
-  h2,
-  p {
-    margin: 0;
-  }
-
-  .final-summary {
+  .final-summary,
+  .error-section {
+    padding-top: var(--space-md);
     border-top: 1px solid var(--border);
-    padding-top: var(--space-md);
   }
 
-  .error-panel {
-    border-top: 1px solid color-mix(in srgb, var(--danger), transparent 70%);
-    padding-top: var(--space-md);
-  }
-
-  pre {
-    overflow: auto;
-    border-radius: var(--radius-md);
-    padding: var(--space-md);
-    background: var(--bg-elevated);
+  .error-section {
+    border-top-color: color-mix(in srgb, var(--danger) 24%, var(--border));
   }
 </style>

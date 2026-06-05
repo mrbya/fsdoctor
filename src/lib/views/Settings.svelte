@@ -5,23 +5,30 @@
 <div class="view">
   <PageHeader
     title="Settings"
-    description="Application preferences and advanced options will live here."
+    description="Application preferences are intentionally deferred while the core manifest and integrity workflows are being polished."
   />
 
-  <Card>
-    <StatusBadge label="MVP" tone="info" />
-    <h2>Settings are not implemented yet</h2>
-    <p>
-      Future options may include hashing parallelism, advanced path handling,
-      and report export preferences.
-    </p>
+  <Card title="MVP scope">
+    <div class="stack">
+      <StatusBadge label="Not implemented" tone="info" />
+      <h2>Settings are not available yet</h2>
+      <p>
+        Likely follow-up options include hashing parallelism, advanced path
+        handling, and report export preferences.
+      </p>
+    </div>
   </Card>
 </div>
 
 <style>
   .view {
     display: grid;
-    gap: var(--fd-space-lg);
+    gap: var(--space-lg);
+  }
+
+  .stack {
+    display: grid;
+    gap: var(--space-sm);
   }
 
   h2,
@@ -30,7 +37,6 @@
   }
 
   p {
-    margin-top: var(--fd-space-xs);
-    color: var(--fd-color-text-muted);
+    color: var(--text-muted);
   }
 </style>

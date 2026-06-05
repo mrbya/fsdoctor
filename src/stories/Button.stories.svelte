@@ -12,7 +12,7 @@
     argTypes: {
       variant: {
         control: { type: "select" },
-        options: ["primary", "secondary", "ghost", "danger"],
+        options: ["primary", "secondary", "ghost", "danger", "success"],
       },
     },
   });
@@ -34,12 +34,23 @@
   <Button variant="danger" onclick={onClick}>Delete project</Button>
 </Story>
 
+<Story name="Success">
+  <Button variant="success" onclick={onClick}>Project ready</Button>
+</Story>
+
+<Story name="Loading">
+  <Button variant="primary" loading={true} onclick={onClick}
+    >Running check</Button
+  >
+</Story>
+
 <Story name="AllVariants">
   <div class="variants-row">
     <Button variant="primary" onclick={onClick}>Check integrity</Button>
     <Button variant="secondary" onclick={onClick}>Start</Button>
     <Button variant="ghost" onclick={onClick}>Cancel</Button>
     <Button variant="danger" onclick={onClick}>Delete project</Button>
+    <Button variant="success" onclick={onClick}>Project ready</Button>
   </div>
 </Story>
 

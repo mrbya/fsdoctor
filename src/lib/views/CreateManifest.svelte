@@ -3,23 +3,95 @@
     Button,
     Card,
     FilePickerRow,
+    MetricGrid,
     PageHeader,
-    StatusBadge,
     ProgressPanel,
+    StatusBadge,
   } from "$lib/components";
+  import { manifestGenerationStore } from "$lib/stores/manifestGeneration.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
   import {
     formatBytes,
     formatCount,
     isPathInsideRoot,
   } from "$lib/utils/helpers";
-  import { manifestGenerationStore } from "$lib/stores/manifestGeneration.svelte";
 
   let projectName = $state("My Backup");
   let rootPath = $state("");
   let dbPath = $state("");
 
-  let showDbLocationWarning = $derived(isPathInsideRoot(dbPath, rootPath));
+  const showDbLocationWarning = $derived(isPathInsideRoot(dbPath, rootPath));
+
+  const liveMetrics = $derived.by(() => {
+    const progress = manifestGenerationStore.progress;
+
+    if (progress === null) {
+      return [];
+    }
+
+    return [
+      { label: "Files seen", value: formatCount(progress.filesSeen) },
+      { label: "Directories seen", value: formatCount(progress.dirsSeen) },
+      { label: "Data discovered", value: formatBytes(progress.bytesSeen) },
+      { label: "Files hashed", value: formatCount(progress.filesHashed) },
+      {
+        label: "Unreadable entries",
+        value: formatCount(progress.unreadableEntries),
+        tone:
+          progress.unreadableEntries > 0
+            ? ("warning" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Changed during scan",
+        value: formatCount(progress.changedDuringScan),
+        tone:
+          progress.changedDuringScan > 0
+            ? ("warning" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Entries written",
+        value: formatCount(progress.resultsWritten),
+      },
+    ];
+  });
+
+  const reportMetrics = $derived.by(() => {
+    const report = manifestGenerationStore.report;
+
+    if (report === null) {
+      return [];
+    }
+
+    return [
+      { label: "Scan ID", value: formatCount(report.scanId) },
+      { label: "Files seen", value: formatCount(report.totalFiles) },
+      { label: "Directories seen", value: formatCount(report.totalDirs) },
+      { label: "Files hashed", value: formatCount(report.hashedFiles) },
+      { label: "Total data", value: formatBytes(report.totalBytes) },
+      {
+        label: "Unreadable entries",
+        value: formatCount(report.unreadableEntries),
+        tone:
+          report.unreadableEntries > 0
+            ? ("warning" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Changed during scan",
+        value: formatCount(report.changedDuringScan),
+        tone:
+          report.changedDuringScan > 0
+            ? ("warning" as const)
+            : ("default" as const),
+      },
+      {
+        label: "Skipped special entries",
+        value: formatCount(report.totalSymlinks + report.totalOther),
+      },
+    ];
+  });
 
   async function create(event: Event): Promise<void> {
     event.preventDefault();
@@ -51,23 +123,23 @@
 
   function manifestGenerationStatusText(status: string): string {
     if (status === "running") {
-      return "Scanning files and writing the manifest. This may take a while.";
+      return "Scanning files and writing the manifest. Counters update as work completes.";
     }
 
     if (status === "cancelling") {
-      return "Cancellation requested. FSDoctor is finishing the current safe step.";
+      return "Cancellation was requested. FSDoctor will stop after the current safe step.";
     }
 
     if (status === "completed") {
-      return "Manifest generation completed successfully.";
+      return "Manifest generation finished successfully and the snapshot is saved in the project database.";
     }
 
     if (status === "cancelled") {
-      return "Manifest generation was cancelled.";
+      return "Manifest generation stopped before completion.";
     }
 
     if (status === "failed") {
-      return "Manifest generation failed.";
+      return "Manifest generation failed before a completed snapshot was recorded.";
     }
 
     return "No manifest generation job is running.";
@@ -83,7 +155,7 @@
     }
 
     if (phase === "finishing") {
-      return "Finishing up";
+      return "Finishing";
     }
 
     return phase;
@@ -96,7 +168,7 @@
       return "success";
     }
 
-    if (status === "cancelled") {
+    if (status === "cancelled" || status === "cancelling") {
       return "warning";
     }
 
@@ -106,6 +178,24 @@
 
     return "info";
   }
+
+  function statusCardTone(
+    status: string,
+  ): "default" | "success" | "warning" | "danger" {
+    if (status === "completed") {
+      return "success";
+    }
+
+    if (status === "cancelled" || status === "cancelling") {
+      return "warning";
+    }
+
+    if (status === "failed") {
+      return "danger";
+    }
+
+    return "default";
+  }
 </script>
 
 <div class="view">
@@ -114,11 +204,10 @@
     description="Create or open an FSDoctor project, then scan the backup tree into a portable integrity record."
   />
 
-  <div class="grid">
-    <Card>
+  <div class="setup-grid">
+    <Card title="Create project">
       <form class="form" onsubmit={create}>
         <div class="section-heading">
-          <h2>Create project</h2>
           <p>
             Start a new integrity database for the backup root you want to
             track.
@@ -145,25 +234,31 @@
         />
 
         {#if showDbLocationWarning}
-          <div class="warning">
+          <div class="notice warning">
             <StatusBadge label="Safety warning" tone="warning" />
             <p>
-              The integrity database appears to be inside the backup folder. For
-              better protection, save it somewhere else.
+              The database appears to be inside the backup root. Save it
+              elsewhere to avoid losing both the source data and its integrity
+              record at the same time.
             </p>
           </div>
         {/if}
 
-        <Button type="submit" disabled={projectStore.busy}>
-          Create project
-        </Button>
+        <div class="actions">
+          <Button
+            type="submit"
+            disabled={projectStore.busy}
+            loading={projectStore.busy}
+          >
+            Create project
+          </Button>
+        </div>
       </form>
     </Card>
 
-    <Card>
+    <Card title="Open existing project">
       <form class="form" onsubmit={open}>
         <div class="section-heading">
-          <h2>Open existing project</h2>
           <p>Re-open a previously created `.fsdoctor.sqlite` database.</p>
         </div>
 
@@ -174,92 +269,112 @@
           buttonLabel="Browse"
         />
 
-        <Button type="submit" variant="secondary" disabled={projectStore.busy}>
-          Open project
-        </Button>
+        <div class="actions">
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={projectStore.busy}
+            loading={projectStore.busy}
+          >
+            Open project
+          </Button>
+        </div>
       </form>
     </Card>
   </div>
 
   {#if projectStore.error !== null}
-    <Card tone="danger">
-      <div class="stack-sm">
+    <Card tone="danger" title="Project action failed">
+      <div class="stack" aria-live="polite">
         <StatusBadge label="Project action failed" tone="danger" />
-        <h2>Something went wrong</h2>
         <p>{projectStore.error.message}</p>
-      </div>
 
-      {#if projectStore.error.details !== null}
-        <details>
-          <summary>Technical details</summary>
-          <pre>{projectStore.error.details}</pre>
-        </details>
-      {/if}
-    </Card>
-  {/if}
-
-  {#if projectStore.project !== null}
-    <Card tone="success">
-      <div class="stack-sm">
-        <StatusBadge label="Project ready" tone="success" />
-        <h2>{projectStore.project.name}</h2>
-        <p>{projectStore.project.rootPath}</p>
-      </div>
-    </Card>
-
-    <Card>
-      <div class="job-card">
-        <div class="section-heading">
-          <h2>Generate manifest</h2>
-          <p>
-            Scan the selected backup root, hash regular files, and persist the
-            manifest into the FSDoctor project database.
-          </p>
-        </div>
-
-        <div class="actions">
-          <Button
-            type="button"
-            disabled={manifestGenerationStore.isActive ||
-              projectStore.dbPath === null}
-            onclick={startManifest}
-          >
-            Generate manifest
-          </Button>
-
-          {#if manifestGenerationStore.isActive}
-            <Button type="button" variant="secondary" onclick={cancelManifest}>
-              Cancel scan
-            </Button>
-          {/if}
-        </div>
-
-        {#if !manifestGenerationStore.isActive && manifestGenerationStore.status === "idle"}
-          <p class="supporting-text">
-            Progress appears here once the scan starts. FSDoctor shows counters,
-            not a fake percentage.
-          </p>
+        {#if projectStore.error.details !== null}
+          <details>
+            <summary>Technical details</summary>
+            <pre>{projectStore.error.details}</pre>
+          </details>
         {/if}
       </div>
     </Card>
   {/if}
 
+  {#if projectStore.project !== null}
+    <div class="workflow-stack">
+      <Card title="Current project">
+        <div class="project-summary">
+          <div class="project-heading">
+            <StatusBadge label="Project ready" tone="success" />
+            <h2>{projectStore.project.name}</h2>
+          </div>
+
+          <dl class="project-meta">
+            <div>
+              <dt>Backup root</dt>
+              <dd>{projectStore.project.rootPath}</dd>
+            </div>
+            <div>
+              <dt>Database path</dt>
+              <dd>{projectStore.dbPath}</dd>
+            </div>
+          </dl>
+        </div>
+      </Card>
+
+      <Card title="Manifest generation">
+        <div class="stack">
+          <div class="section-heading">
+            <p>
+              Scan the selected backup root, hash regular files, and persist a
+              completed manifest snapshot into the current project.
+            </p>
+          </div>
+
+          <div class="actions">
+            <Button
+              type="button"
+              disabled={manifestGenerationStore.isActive ||
+                projectStore.dbPath === null}
+              onclick={startManifest}
+            >
+              Generate manifest
+            </Button>
+
+            {#if manifestGenerationStore.isActive}
+              <Button
+                type="button"
+                variant="secondary"
+                loading={manifestGenerationStore.status === "cancelling"}
+                onclick={cancelManifest}
+              >
+                Cancel scan
+              </Button>
+            {/if}
+          </div>
+
+          {#if !manifestGenerationStore.isActive && manifestGenerationStore.status === "idle"}
+            <p class="supporting-text">
+              Progress appears here once the scan starts. FSDoctor shows phases
+              and real counters, not a fake percentage.
+            </p>
+          {/if}
+        </div>
+      </Card>
+    </div>
+  {/if}
+
   {#if manifestGenerationStore.status !== "idle"}
     <Card
-      tone={manifestGenerationStore.status === "failed"
-        ? "danger"
-        : manifestGenerationStore.status === "completed"
-          ? "success"
-          : "default"}
+      title="Manifest job"
+      tone={statusCardTone(manifestGenerationStore.status)}
     >
-      <div class="stack-lg" aria-live="polite">
+      <div class="stack" aria-live="polite">
         <StatusBadge
           label={manifestGenerationStore.status}
           tone={statusTone(manifestGenerationStore.status)}
         />
 
         <ProgressPanel
-          eyebrow="Manifest generation"
           title={manifestGenerationStore.progress === null
             ? "Preparing scan"
             : manifestPhaseText(manifestGenerationStore.progress.phase)}
@@ -269,12 +384,12 @@
         />
 
         {#if manifestGenerationStore.progress !== null}
-          <section class="panel">
+          <section class="detail-section">
             <div class="section-heading compact">
               <h2>Live progress</h2>
               <p>
-                These counters update as FSDoctor discovers, hashes, and writes
-                entries.
+                These counters update while files are discovered, hashed, and
+                written.
               </p>
             </div>
 
@@ -285,137 +400,35 @@
               </div>
             {/if}
 
-            <dl class="summary-grid">
-              <div>
-                <dt>Files seen</dt>
-                <dd>
-                  {formatCount(manifestGenerationStore.progress.filesSeen)}
-                </dd>
-              </div>
-              <div>
-                <dt>Directories seen</dt>
-                <dd>
-                  {formatCount(manifestGenerationStore.progress.dirsSeen)}
-                </dd>
-              </div>
-              <div>
-                <dt>Data discovered</dt>
-                <dd>
-                  {formatBytes(manifestGenerationStore.progress.bytesSeen)}
-                </dd>
-              </div>
-              <div>
-                <dt>Files hashed</dt>
-                <dd>
-                  {formatCount(manifestGenerationStore.progress.filesHashed)}
-                </dd>
-              </div>
-              <div>
-                <dt>Unreadable entries</dt>
-                <dd>
-                  {formatCount(
-                    manifestGenerationStore.progress.unreadableEntries,
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt>Changed during scan</dt>
-                <dd>
-                  {formatCount(
-                    manifestGenerationStore.progress.changedDuringScan,
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt>Entries written</dt>
-                <dd>
-                  {formatCount(manifestGenerationStore.progress.resultsWritten)}
-                </dd>
-              </div>
-            </dl>
+            <MetricGrid items={liveMetrics} />
           </section>
         {/if}
 
         {#if manifestGenerationStore.report !== null}
-          <section class="panel final-summary">
+          <section class="detail-section final-summary">
             <div class="section-heading compact">
               <h2>Final summary</h2>
-              <p>
-                The latest completed manifest snapshot is stored in the project
-                database.
-              </p>
+              <p>The latest completed manifest snapshot is summarized below.</p>
             </div>
 
-            <dl class="summary-grid">
-              <div>
-                <dt>Scan ID</dt>
-                <dd>{formatCount(manifestGenerationStore.report.scanId)}</dd>
-              </div>
-              <div>
-                <dt>Files seen</dt>
-                <dd>
-                  {formatCount(manifestGenerationStore.report.totalFiles)}
-                </dd>
-              </div>
-              <div>
-                <dt>Directories seen</dt>
-                <dd>{formatCount(manifestGenerationStore.report.totalDirs)}</dd>
-              </div>
-              <div>
-                <dt>Files hashed</dt>
-                <dd>
-                  {formatCount(manifestGenerationStore.report.hashedFiles)}
-                </dd>
-              </div>
-              <div>
-                <dt>Total data</dt>
-                <dd>
-                  {formatBytes(manifestGenerationStore.report.totalBytes)}
-                </dd>
-              </div>
-              <div>
-                <dt>Unreadable entries</dt>
-                <dd>
-                  {formatCount(
-                    manifestGenerationStore.report.unreadableEntries,
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt>Changed during scan</dt>
-                <dd>
-                  {formatCount(
-                    manifestGenerationStore.report.changedDuringScan,
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt>Skipped special entries</dt>
-                <dd>
-                  {formatCount(
-                    manifestGenerationStore.report.totalSymlinks +
-                      manifestGenerationStore.report.totalOther,
-                  )}
-                </dd>
-              </div>
-            </dl>
+            <MetricGrid items={reportMetrics} />
+          </section>
+        {/if}
+
+        {#if manifestGenerationStore.error !== null}
+          <section class="detail-section error-section">
+            <StatusBadge label="Manifest generation failed" tone="danger" />
+            <p>{manifestGenerationStore.error.message}</p>
+
+            {#if manifestGenerationStore.error.details !== null}
+              <details>
+                <summary>Technical details</summary>
+                <pre>{manifestGenerationStore.error.details}</pre>
+              </details>
+            {/if}
           </section>
         {/if}
       </div>
-
-      {#if manifestGenerationStore.error !== null}
-        <section class="panel error-panel">
-          <h2>Something went wrong</h2>
-          <p>{manifestGenerationStore.error.message}</p>
-
-          {#if manifestGenerationStore.error.details !== null}
-            <details>
-              <summary>Technical details</summary>
-              <pre>{manifestGenerationStore.error.details}</pre>
-            </details>
-          {/if}
-        </section>
-      {/if}
     </Card>
   {/if}
 </div>
@@ -426,29 +439,29 @@
     gap: var(--space-lg);
   }
 
-  .grid {
+  .setup-grid,
+  .workflow-stack {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-lg);
   }
 
-  .form {
-    display: grid;
-    gap: var(--space-md);
+  .setup-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  label {
+  .form,
+  .stack,
+  .project-summary,
+  .project-heading,
+  .section-heading,
+  .detail-section,
+  .notice {
     display: grid;
-    gap: var(--space-xs);
-    color: var(--text-muted);
+    gap: var(--space-sm);
   }
 
-  input {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 0.7rem;
-    color: var(--text);
-    background: var(--bg-elevated);
+  .section-heading.compact {
+    gap: var(--space-2xs);
   }
 
   h2,
@@ -456,34 +469,13 @@
     margin: 0;
   }
 
+  h2 {
+    font-size: var(--font-size-lg);
+    line-height: 1.35;
+  }
+
   p {
     color: var(--text-muted);
-  }
-
-  .warning {
-    display: grid;
-    gap: var(--space-xs);
-    border: 1px solid color-mix(in srgb, var(--warning), transparent 50%);
-    border-radius: var(--radius-md);
-    padding: var(--space-md);
-    background: color-mix(in srgb, var(--warning), transparent 92%);
-  }
-
-  .job-card,
-  .stack-lg,
-  .panel,
-  .stack-sm {
-    display: grid;
-    gap: var(--space-md);
-  }
-
-  .section-heading {
-    display: grid;
-    gap: var(--space-xs);
-  }
-
-  .section-heading.compact {
-    gap: var(--space-2xs);
   }
 
   .actions {
@@ -496,66 +488,66 @@
     font-size: var(--font-size-sm);
   }
 
-  .path-block {
-    display: grid;
-    gap: var(--space-2xs);
-    padding: var(--space-md);
+  .notice {
+    padding: 0.75rem;
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--bg-muted);
+    border-radius: var(--radius);
+    background: var(--bg-soft);
   }
 
-  .path-label,
-  .summary-grid dt {
+  .notice.warning {
+    border-color: color-mix(in srgb, var(--warning) 40%, var(--border));
+    background: var(--bg-warning-soft);
+  }
+
+  .project-meta {
+    display: grid;
+    gap: var(--space-sm);
+  }
+
+  .project-meta div {
+    display: grid;
+    gap: var(--space-2xs);
+  }
+
+  .project-meta dt,
+  .path-label {
     color: var(--text-muted);
     font-size: var(--font-size-sm);
   }
 
-  .path-block code {
-    overflow-wrap: anywhere;
-    color: var(--text);
-  }
-
-  .summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-    gap: var(--space-sm);
-  }
-
-  .summary-grid div {
-    display: grid;
-    gap: var(--space-2xs);
-    padding: var(--space-md);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: color-mix(in srgb, var(--bg-raised), transparent 12%);
-  }
-
-  .summary-grid dd {
+  .project-meta dd {
     margin: 0;
     color: var(--text);
-    font-size: var(--font-size-lg);
+    overflow-wrap: anywhere;
   }
 
-  .final-summary {
+  .path-block {
+    display: grid;
+    gap: var(--space-2xs);
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-soft);
+  }
+
+  .path-block code {
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+
+  .final-summary,
+  .error-section {
+    padding-top: var(--space-md);
     border-top: 1px solid var(--border);
-    padding-top: var(--space-md);
   }
 
-  .error-panel {
-    border-top: 1px solid color-mix(in srgb, var(--danger), transparent 70%);
-    padding-top: var(--space-md);
-  }
-
-  pre {
-    overflow: auto;
-    border-radius: var(--radius-md);
-    padding: var(--space-md);
-    background: var(--bg-elevated);
+  .error-section {
+    border-top-color: color-mix(in srgb, var(--danger) 24%, var(--border));
   }
 
   @media (max-width: 64rem) {
-    .grid {
+    .setup-grid {
       grid-template-columns: 1fr;
     }
   }
