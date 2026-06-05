@@ -20,6 +20,7 @@ vite.config.ts.timestamp-*
 /target
 **/*/target
 /src-tauri/target
+*.fsdoctor.sqlite
 
 # Docs
 /docs-page

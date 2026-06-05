@@ -5,9 +5,11 @@
     FilePickerRow,
     PageHeader,
     StatusBadge,
+    ProgressPanel,
   } from "$lib/components";
   import { projectStore } from "$lib/stores/project.svelte";
   import { isPathInsideRoot } from "$lib/utils/helpers";
+  import { manifestGenerationStore } from "$lib/stores/manifestGeneration.svelte";
 
   let projectName = $state("My Backup");
   let rootPath = $state("");
@@ -29,6 +31,44 @@
     event.preventDefault();
 
     await projectStore.open({ dbPath });
+  }
+
+  async function startManifest(): Promise<void> {
+    event?.preventDefault();
+
+    if (projectStore.dbPath === null) {
+      return;
+    }
+
+    await manifestGenerationStore.start(projectStore.dbPath);
+  }
+
+  async function cancelManifest(): Promise<void> {
+    await manifestGenerationStore.cancel();
+  }
+
+  function manifestGenerationStatusText(status: string): string {
+    if (status === "running") {
+      return "Scanning files and writing the manifest. This may take a while.";
+    }
+
+    if (status === "cancelling") {
+      return "Cancellation requested. FSDoctor is finishing the current safe step.";
+    }
+
+    if (status === "completed") {
+      return "Manifest generation completed successfully.";
+    }
+
+    if (status === "cancelled") {
+      return "Manifest generation was cancelled.";
+    }
+
+    if (status === "failed") {
+      return "Manifest generation failed.";
+    }
+
+    return "No manifest generation job is running.";
   }
 </script>
 
@@ -117,6 +157,88 @@
       <h2>{projectStore.project.name}</h2>
       <p>{projectStore.project.rootPath}</p>
     </Card>
+    <Card>
+      <form class="form" onsubmit={startManifest}>
+        <h2>Generate manifest</h2>
+        <p>
+          Scan the selected backup root, hash regular files, and persist the
+          manifest into the FSDoctor project database.
+        </p>
+
+        <Button
+          type="submit"
+          disabled={manifestGenerationStore.isActive ||
+            projectStore.dbPath === null}
+        >
+          Generate manifest
+        </Button>
+
+        {#if manifestGenerationStore.isActive}
+          <Button type="button" variant="secondary" onclick={cancelManifest}>
+            Cancel
+          </Button>
+        {/if}
+      </form>
+    </Card>
+  {/if}
+
+  {#if manifestGenerationStore.status !== "idle"}
+    <Card
+      tone={manifestGenerationStore.status === "failed"
+        ? "danger"
+        : manifestGenerationStore.status === "completed"
+          ? "success"
+          : "default"}
+    >
+      <StatusBadge
+        label={manifestGenerationStore.status}
+        tone={manifestGenerationStore.status === "failed"
+          ? "danger"
+          : manifestGenerationStore.status === "completed"
+            ? "success"
+            : "info"}
+      />
+
+      <ProgressPanel
+        title="Manifest generation"
+        description={manifestGenerationStatusText(
+          manifestGenerationStore.status,
+        )}
+      />
+
+      {#if manifestGenerationStore.report !== null}
+        <dl class="summary">
+          <dt>Files seen</dt>
+          <dd>{manifestGenerationStore.report.totalFiles}</dd>
+
+          <dt>Files hashed</dt>
+          <dd>{manifestGenerationStore.report.hashedFiles}</dd>
+
+          <dt>Directories</dt>
+          <dd>{manifestGenerationStore.report.totalDirs}</dd>
+
+          <dt>Total bytes</dt>
+          <dd>{manifestGenerationStore.report.totalBytes}</dd>
+
+          <dt>Unreadable entries</dt>
+          <dd>{manifestGenerationStore.report.unreadableEntries}</dd>
+
+          <dt>Changed during scan</dt>
+          <dd>{manifestGenerationStore.report.changedDuringScan}</dd>
+        </dl>
+      {/if}
+
+      {#if manifestGenerationStore.error !== null}
+        <p>{manifestGenerationStore.error.message}</p>
+
+        {#if manifestGenerationStore.error.details !== null}
+          <details>
+            <summary>Technical details</summary>
+            <pre>{manifestGenerationStore.error.details}</pre>
+          </details>
+        {/if}
+      {/if}
+    </Card>
   {/if}
 </div>
 
@@ -168,6 +290,21 @@
     border-radius: var(--fd-radius-md);
     padding: var(--fd-space-md);
     background: color-mix(in srgb, var(--fd-color-warning), transparent 92%);
+  }
+
+  .summary {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--space-xs) var(--space-md);
+    margin: var(--space-md) 0 0;
+  }
+
+  .summary dt {
+    color: var(--text-muted);
+  }
+
+  .summary dd {
+    margin: 0;
   }
 
   pre {
