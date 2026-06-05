@@ -1,15 +1,19 @@
 use std::path::PathBuf;
 
-use fsdoctor_core::{CreateProjectRequest, OpenProjectRequest, ProjectDb, DEFAULT_DB_BATCH_SIZE};
+use fsdoctor_core::{
+    CreateProjectRequest, OpenProjectRequest, ProjectDb, DEFAULT_CHECK_DB_BATCH_SIZE,
+    DEFAULT_DB_BATCH_SIZE,
+};
 use tauri::{AppHandle, State};
 
 use crate::{
     dto::{
         CancelJobRequestDto, CancelJobResultDto, CreateProjectRequestDto, JobStartedDto,
-        OpenProjectRequestDto, ProjectDto, StartManifestGenerationRequestDto,
+        OpenProjectRequestDto, ProjectDto, StartIntegrityCheckRequestDto,
+        StartManifestGenerationRequestDto,
     },
     error::{CommandError, CommandResult},
-    handlers::run_manifest_generation_job,
+    handlers::{run_integrity_check_job, run_manifest_generation_job},
     state::AppState,
 };
 
@@ -98,4 +102,32 @@ pub async fn cancel_job(
         job_id: request.job_id,
         cancellation_requested,
     })
+}
+
+/// Starts integrity check as a background job.
+///
+/// # Errors
+/// Returns [`CommandError`] if the job cannot be registered.
+#[tauri::command]
+pub async fn start_integrity_check(
+    request: StartIntegrityCheckRequestDto,
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> CommandResult<JobStartedDto> {
+    let app_state = state;
+    let (job_id, cancel_token) = app_state.create_job("integrity").map_err(|details| {
+        CommandError::internal("Could not create integrity check job", Some(details))
+    })?;
+
+    let db_path = PathBuf::from(request.db_path);
+    let db_batch_size = request.db_batch_size.unwrap_or(DEFAULT_CHECK_DB_BATCH_SIZE);
+
+    let task_job_id = job_id.clone();
+    let task_app = app;
+
+    tauri::async_runtime::spawn(async move {
+        run_integrity_check_job(task_app, task_job_id, db_path, db_batch_size, cancel_token).await;
+    });
+
+    Ok(JobStartedDto { job_id })
 }

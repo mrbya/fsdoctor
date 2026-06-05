@@ -83,7 +83,8 @@ pub fn run() {
             commands::create_project,
             commands::open_project,
             commands::start_manifest_generation,
-            commands::cancel_job
+            commands::cancel_job,
+            commands::start_integrity_check
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

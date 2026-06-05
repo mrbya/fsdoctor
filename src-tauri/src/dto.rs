@@ -1,4 +1,7 @@
-use fsdoctor_core::ManifestGenerationReport;
+use fsdoctor_core::{
+    IntegrityCheckPhase, IntegrityCheckProgress, IntegrityCheckReport, IntegrityCheckSummary,
+    ManifestGenerationReport, Project,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::error::CommandError;
@@ -42,8 +45,8 @@ pub struct ProjectDto {
     pub format_version: i64,
 }
 
-impl From<fsdoctor_core::Project> for ProjectDto {
-    fn from(project: fsdoctor_core::Project) -> Self {
+impl From<Project> for ProjectDto {
+    fn from(project: Project) -> Self {
         Self {
             id: project.id.raw(),
             name: project.name,
@@ -167,6 +170,207 @@ pub struct ManifestGenerationFinishedEventDto {
 
     /// Report if the job reached core manifest generation completion.
     pub report: Option<ManifestGenerationReportDto>,
+
+    /// Error if the job failed.
+    pub error: Option<CommandError>,
+}
+
+/// Request to start an integrity check.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StartIntegrityCheckRequestDto {
+    /// Path to the `FSDoctor` project database.
+    pub db_path: String,
+
+    /// Optional DB batch size.
+    pub db_batch_size: Option<usize>,
+}
+
+/// Integrity check event status.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IntegrityCheckEventStatusDto {
+    /// Job completed successfully.
+    Completed,
+
+    /// Job completed because cancellation was requested.
+    Cancelled,
+
+    /// Job failed.
+    Failed,
+}
+
+/// Integrity check summary sent to the frontend.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IntegrityCheckSummaryDto {
+    /// OK entries.
+    pub ok: u64,
+
+    /// Missing entries.
+    pub missing: u64,
+
+    /// New entries.
+    pub new: u64,
+
+    /// Hash mismatches.
+    pub hash_mismatch: u64,
+
+    /// Size mismatches.
+    pub size_mismatch: u64,
+
+    /// Type changes.
+    pub type_changed: u64,
+
+    /// Unreadable entries.
+    pub unreadable: u64,
+
+    /// Changed-during-check entries.
+    pub changed_during_check: u64,
+
+    /// Skipped entries.
+    pub skipped: u64,
+}
+
+impl From<IntegrityCheckSummary> for IntegrityCheckSummaryDto {
+    fn from(summary: IntegrityCheckSummary) -> Self {
+        Self {
+            ok: summary.ok,
+            missing: summary.missing,
+            new: summary.new,
+            hash_mismatch: summary.hash_mismatch,
+            size_mismatch: summary.size_mismatch,
+            type_changed: summary.type_changed,
+            unreadable: summary.unreadable,
+            changed_during_check: summary.changed_during_check,
+            skipped: summary.skipped,
+        }
+    }
+}
+
+/// Integrity check report sent to the frontend.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IntegrityCheckReportDto {
+    /// Integrity-check scan id.
+    pub scan_id: i64,
+
+    /// Manifest-generation scan id used as baseline.
+    pub manifest_scan_id: i64,
+
+    /// Result summary.
+    pub summary: IntegrityCheckSummaryDto,
+}
+
+impl From<IntegrityCheckReport> for IntegrityCheckReportDto {
+    fn from(report: IntegrityCheckReport) -> Self {
+        Self {
+            scan_id: report.scan_id.raw(),
+            manifest_scan_id: report.manifest_scan_id.raw(),
+            summary: IntegrityCheckSummaryDto::from(report.summary),
+        }
+    }
+}
+
+/// Integrity check progress phase.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IntegrityCheckPhaseDto {
+    /// Loading baseline manifest.
+    LoadingManifest,
+
+    /// Walking and comparing the current tree.
+    WalkingAndChecking,
+
+    /// Recording missing entries.
+    RecordingMissingEntries,
+
+    /// Writing results.
+    Writing,
+
+    /// Finalizing scan.
+    Finishing,
+}
+
+impl From<IntegrityCheckPhase> for IntegrityCheckPhaseDto {
+    fn from(phase: IntegrityCheckPhase) -> Self {
+        match phase {
+            IntegrityCheckPhase::LoadingManifest => Self::LoadingManifest,
+            IntegrityCheckPhase::WalkingAndChecking => Self::WalkingAndChecking,
+            IntegrityCheckPhase::RecordingMissingEntries => Self::RecordingMissingEntries,
+            IntegrityCheckPhase::Writing => Self::Writing,
+            IntegrityCheckPhase::Finishing => Self::Finishing,
+        }
+    }
+}
+
+/// Integrity check progress payload.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IntegrityCheckProgressDto {
+    /// Current phase.
+    pub phase: IntegrityCheckPhaseDto,
+
+    /// Current path, if available.
+    pub current_path: Option<String>,
+
+    /// Current summary.
+    pub summary: IntegrityCheckSummaryDto,
+
+    /// Files seen.
+    pub files_seen: u64,
+
+    /// Directories seen.
+    pub dirs_seen: u64,
+
+    /// Bytes seen.
+    pub bytes_seen: u64,
+
+    /// Files hashed.
+    pub files_hashed: u64,
+
+    /// Results written.
+    pub results_written: u64,
+}
+
+impl From<IntegrityCheckProgress> for IntegrityCheckProgressDto {
+    fn from(progress: IntegrityCheckProgress) -> Self {
+        Self {
+            phase: IntegrityCheckPhaseDto::from(progress.phase),
+            current_path: progress.current_path,
+            summary: IntegrityCheckSummaryDto::from(progress.summary),
+            files_seen: progress.files_seen,
+            dirs_seen: progress.dirs_seen,
+            bytes_seen: progress.bytes_seen,
+            files_hashed: progress.files_hashed,
+            results_written: progress.results_written,
+        }
+    }
+}
+
+/// Integrity check progress event payload.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IntegrityCheckProgressEventDto {
+    /// Job identifier.
+    pub job_id: String,
+
+    /// Progress snapshot.
+    pub progress: IntegrityCheckProgressDto,
+}
+
+/// Integrity check finished event payload.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IntegrityCheckFinishedEventDto {
+    /// Job identifier.
+    pub job_id: String,
+
+    /// Final job status.
+    pub status: IntegrityCheckEventStatusDto,
+
+    /// Report if the job reached core integrity-check completion.
+    pub report: Option<IntegrityCheckReportDto>,
 
     /// Error if the job failed.
     pub error: Option<CommandError>,
