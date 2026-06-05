@@ -11,6 +11,7 @@ class ProjectStore {
   project = $state<Project | null>(null);
   busy = $state(false);
   error = $state<CommandError | null>(null);
+  dbPath = $state<string | null>(null);
 
   async create(request: CreateProjectRequest): Promise<void> {
     this.busy = true;
@@ -18,6 +19,7 @@ class ProjectStore {
 
     try {
       this.project = await createProject(request);
+      this.dbPath = request.dbPath;
     } catch (error) {
       this.error = normalizeCommandError(error);
     } finally {
@@ -31,6 +33,7 @@ class ProjectStore {
 
     try {
       this.project = await openProject(request);
+      this.dbPath = request.dbPath;
     } catch (error) {
       this.error = normalizeCommandError(error);
     } finally {
