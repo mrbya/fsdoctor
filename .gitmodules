@@ -1,0 +1,3 @@
+[submodule "docs/dev/reference-projects/plantracker"]
+	path = docs/dev/reference-projects/plantracker
+	url = https://gitlab.com/family-treasure/plantracker.git
