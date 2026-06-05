@@ -15,6 +15,7 @@ import type {
   JobStarted,
   CancelJobRequest,
   CancelJobResult,
+  StartIntegrityCheckRequest,
 } from "$lib/types";
 
 /**
@@ -63,4 +64,16 @@ export async function cancelJob(
   request: CancelJobRequest,
 ): Promise<CancelJobResult> {
   return invoke<CancelJobResult>("cancel_job", { request });
+}
+
+/**
+ * Starts integrity check as a backend job.
+ *
+ * @returns Job id of the started integrity check job.
+ * @throws If the backend fails to start the job.
+ */
+export async function startIntegrityCheck(
+  request: StartIntegrityCheckRequest,
+): Promise<JobStarted> {
+  return invoke<JobStarted>("start_integrity_check", { request });
 }
