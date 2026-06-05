@@ -1,4 +1,7 @@
-use std::path::Path;
+use std::{
+    path::Path,
+    sync::{Arc, Mutex},
+};
 
 use tokio::{
     sync::mpsc,
@@ -9,6 +12,7 @@ use crate::{
     db::{manifest::ManifestEntryRecord, scan::ScanCounters},
     hash_file,
     manifest::model::{ManifestGenerationOptions, ManifestGenerationReport},
+    manifest::progress::{ManifestGenerationPhase, ManifestGenerationProgress},
     scan_tree, CancelToken, Error, FsEntry, FsEntryKind, FsEntryStatus, HashOptions, HashOutcome,
     ManifestEntryStatus, ProjectDb, ProjectId, Result, ScanFlow, ScanId, ScanKind, ScanOptions,
     ScanStatus,
@@ -16,6 +20,22 @@ use crate::{
 
 /// Number of manifest records buffered between producer and DB writer.
 const MANIFEST_RECORD_CHANNEL_CAPACITY: usize = 1024;
+
+/// Progress callback type used by the manifest-generation engine.
+type ProgressCallback = Arc<dyn Fn(ManifestGenerationProgress) + Send + Sync + 'static>;
+
+/// Shared manifest progress state.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+struct ManifestProgressState {
+    /// Latest scanned counters.
+    counters: ScanCounters,
+
+    /// Latest current path.
+    current_path: Option<String>,
+
+    /// Entries written to the database.
+    results_written: u64,
+}
 
 /// Internal producer result.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -48,6 +68,31 @@ pub async fn generate_manifest(
     options: ManifestGenerationOptions,
     cancel_token: &CancelToken,
 ) -> Result<ManifestGenerationReport> {
+    generate_manifest_inner(db, options, cancel_token, None).await
+}
+
+/// Generates and persists a file-tree manifest while reporting progress.
+///
+/// # Errors
+///
+/// Returns an error if scan creation, filesystem scanning, hashing, worker
+/// execution, or database persistence fails.
+pub async fn generate_manifest_with_progress(
+    db: &ProjectDb,
+    options: ManifestGenerationOptions,
+    cancel_token: &CancelToken,
+    on_progress: impl Fn(ManifestGenerationProgress) + Send + Sync + 'static,
+) -> Result<ManifestGenerationReport> {
+    generate_manifest_inner(db, options, cancel_token, Some(Arc::new(on_progress))).await
+}
+
+/// Internal manifest-generation implementation.
+async fn generate_manifest_inner(
+    db: &ProjectDb,
+    options: ManifestGenerationOptions,
+    cancel_token: &CancelToken,
+    progress: Option<ProgressCallback>,
+) -> Result<ManifestGenerationReport> {
     if options.db_batch_size == 0 {
         return Err(Error::InvalidManifestBatchSize);
     }
@@ -62,6 +107,9 @@ pub async fn generate_manifest(
     let root_path = project.root_path.clone();
     let project_id = project.id;
     let producer_cancel_token = cancel_token.clone();
+    let progress_state = Arc::new(Mutex::new(ManifestProgressState::default()));
+    let producer_progress = progress.clone();
+    let producer_progress_state = Arc::clone(&progress_state);
 
     let producer = task::spawn_blocking(move || {
         produce_manifest_records(
@@ -70,10 +118,19 @@ pub async fn generate_manifest(
             &root_path,
             &sender,
             &producer_cancel_token,
+            producer_progress.as_ref(),
+            &producer_progress_state,
         )
     });
 
-    let writer_result = consume_manifest_record(db, receiver, options.db_batch_size).await;
+    let writer_result = consume_manifest_record(
+        db,
+        receiver,
+        options.db_batch_size,
+        progress.clone(),
+        Arc::clone(&progress_state),
+    )
+    .await;
 
     if writer_result.is_err() {
         cancel_token.cancel();
@@ -81,7 +138,15 @@ pub async fn generate_manifest(
 
     let producer_result = await_producer(producer).await;
 
-    finish_generation(db, scan_id, producer_result, writer_result).await
+    finish_generation(
+        db,
+        scan_id,
+        producer_result,
+        writer_result,
+        progress.as_ref(),
+        &progress_state,
+    )
+    .await
 }
 
 /// Awaits the blocking producer task.
@@ -97,6 +162,8 @@ async fn finish_generation(
     scan_id: ScanId,
     producer_result: Result<ProducerReport>,
     writer_result: Result<()>,
+    progress: Option<&ProgressCallback>,
+    progress_state: &Arc<Mutex<ManifestProgressState>>,
 ) -> Result<ManifestGenerationReport> {
     match (producer_result, writer_result) {
         (Ok(producer_report), Ok(())) => {
@@ -105,6 +172,15 @@ async fn finish_generation(
             } else {
                 ScanStatus::Completed
             };
+
+            emit_progress(
+                progress,
+                progress_state,
+                ManifestGenerationPhase::Finishing,
+                None,
+                producer_report.counters,
+                None,
+            );
 
             db.finish_scan(scan_id, status, producer_report.counters, None)
                 .await?;
@@ -155,6 +231,8 @@ fn produce_manifest_records(
     root_path: &Path,
     sender: &mpsc::Sender<ManifestEntryRecord>,
     cancel_token: &CancelToken,
+    progress: Option<&ProgressCallback>,
+    progress_state: &Arc<Mutex<ManifestProgressState>>,
 ) -> Result<ProducerReport> {
     let mut counters = ScanCounters::default();
     let mut cancelled = false;
@@ -167,6 +245,17 @@ fn produce_manifest_records(
 
         match manifest_record_from_entry(project_id, scan_id, entry, &mut counters, cancel_token)? {
             RecordProduction::Record(record) => {
+                let current_path = record.relative_path.as_str().to_owned();
+
+                emit_progress(
+                    progress,
+                    progress_state,
+                    ManifestGenerationPhase::WalkingAndHashing,
+                    Some(current_path),
+                    counters,
+                    None,
+                );
+
                 if sender.blocking_send(record).is_err() {
                     cancelled = cancel_token.is_cancelled();
                     return Ok(ScanFlow::Stop);
@@ -192,21 +281,47 @@ async fn consume_manifest_record(
     db: &ProjectDb,
     mut receiver: mpsc::Receiver<ManifestEntryRecord>,
     batch_size: usize,
+    progress: Option<ProgressCallback>,
+    progress_state: Arc<Mutex<ManifestProgressState>>,
 ) -> Result<()> {
     let mut batch = Vec::with_capacity(batch_size);
+    let mut results_written = 0_u64;
 
     while let Some(record) = receiver.recv().await {
         batch.push(record);
 
         if batch.len() >= batch_size {
             db.upsert_manifest_entries(&batch).await?;
+            results_written = results_written.saturating_add(
+                u64::try_from(batch.len()).map_err(|_error| Error::NumericOverflow)?,
+            );
             batch.clear();
+
+            emit_progress(
+                progress.as_ref(),
+                &progress_state,
+                ManifestGenerationPhase::Writing,
+                None,
+                ScanCounters::default(),
+                Some(results_written),
+            );
         }
     }
 
     if !batch.is_empty() {
         db.upsert_manifest_entries(&batch).await?;
+        results_written = results_written
+            .saturating_add(u64::try_from(batch.len()).map_err(|_error| Error::NumericOverflow)?);
     }
+
+    emit_progress(
+        progress.as_ref(),
+        &progress_state,
+        ManifestGenerationPhase::Writing,
+        None,
+        ScanCounters::default(),
+        Some(results_written),
+    );
 
     Ok(())
 }
@@ -363,6 +478,53 @@ fn record_non_file(
         status,
         error_message,
     }
+}
+
+/// Emits manifest progress if a callback exists.
+fn emit_progress(
+    progress: Option<&ProgressCallback>,
+    progress_state: &Arc<Mutex<ManifestProgressState>>,
+    phase: ManifestGenerationPhase,
+    current_path: Option<String>,
+    counters: ScanCounters,
+    results_written: Option<u64>,
+) {
+    let Some(callback) = progress else {
+        return;
+    };
+
+    let snapshot = {
+        let mut state = progress_state
+            .lock()
+            .expect("manifest progress state lock should not be poisoned");
+
+        if counters != ScanCounters::default() {
+            state.counters = counters;
+        }
+
+        if current_path.is_some() || phase != ManifestGenerationPhase::Writing {
+            state.current_path = current_path;
+        }
+
+        if let Some(results_written) = results_written {
+            state.results_written = results_written;
+        }
+
+        ManifestGenerationProgress {
+            phase,
+            current_path: state.current_path.clone(),
+            files_seen: state.counters.total_files,
+            dirs_seen: state.counters.total_dirs,
+            bytes_seen: state.counters.total_bytes,
+            files_hashed: state.counters.hashed_files,
+            bytes_hashed: state.counters.total_bytes,
+            unreadable_entries: state.counters.unreadable_entries,
+            changed_during_scan: state.counters.changed_during_scan,
+            results_written: state.results_written,
+        }
+    };
+
+    callback(snapshot);
 }
 
 /// Updateds countrs for an entry observed by the scanner.

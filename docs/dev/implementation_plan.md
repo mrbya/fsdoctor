@@ -296,7 +296,7 @@ body {
 - [x] `npm run tauri dev` starts FSDoctor successfully.
 - [x] `cargo test -p fsdoctor-core` works independently of Tauri.
 - [x] UI has a minimal Catppuccin Mocha appearance.
-- [ ] Top-level views are navigable. (No views yet, just a single page app)
+- [x] Top-level views are navigable. (Handled by the AppShell SPA view switcher.)
 - [x] A test Tauri command can be called from the frontend and returns data.
 - [x] There is no integrity logic in the frontend.
 - [x] There is no Tauri dependency in `fsdoctor-core`.
@@ -402,7 +402,7 @@ ON check_results(scan_id, result_kind);
 - [x] Existing `.fsdoctor.sqlite` files can be opened.
 - [x] DB format version is stored and checked.
 - [x] Project root path is stored.
-- [ ] App warns when the DB is being saved inside the backup folder. (frontend very minial ATM)
+- [x] App warns when the DB is being saved inside the backup folder.
 - [x] Corrupt/non-FSDoctor SQLite files produce a friendly error.
 - [x] Database tests cover migration, create, open, and version check.
 
@@ -467,7 +467,7 @@ pub enum FsEntryKind {
 - [x] Scanner records unreadable entries as errors instead of aborting.
 - [x] Scanner produces stable root-relative paths.
 - [x] Scanner does not include files outside the selected root.
-- [x] Unit/integration tests cover normal files, nested directories, symlinks, empty directories, and unreadable entries where platform-supported.
+- [ ] Unit/integration tests cover normal files, nested directories, symlinks, empty directories, and unreadable entries where platform-supported. (Unreadable-entry coverage is still missing.)
 
 ---
 
@@ -520,7 +520,7 @@ else:
 - [x] Hashes are stored internally as 32-byte binary values.
 - [x] Hash hex conversion exists only for display/export.
 - [x] Known input bytes produce expected BLAKE3 digest.
-- [x] File mutation during hashing is detected where testable.
+- [ ] File mutation during hashing is detected where testable. (Runtime detection exists, but deterministic test coverage is still missing.)
 - [x] Cancellation can interrupt hashing of a large file.
 - [x] Hashing errors are structured and user-reportable.
 
@@ -598,11 +598,11 @@ Avoid exact percentage in the MVP unless a pre-scan is added. A one-pass scanner
 - [x] Directories are recorded without content hashes.
 - [x] Symlinks/reparse points are recorded/skipped according to policy.
 - [x] Unreadable files are recorded and included in the report.
-- [ ] Scan progress is visible in the UI.
-- [ ] Manifest generation can be cancelled.
+- [x] Scan progress is visible in the UI.
+- [x] Manifest generation can be cancelled.
 - [x] Cancelled scans are marked as cancelled in the DB.
 - [x] Failed scans are marked as failed with an error message.
-- [?] Running the manifest generation twice updates existing entries without duplicating paths.
+- [x] Running the manifest generation twice updates existing entries without duplicating paths.
 
 ---
 
@@ -676,9 +676,9 @@ For the MVP, do not hash files whose size already differs. Add a later advanced 
 - [x] File/directory replacements are reported as `TYPE_CHANGED`.
 - [x] Unreadable current files are reported as `UNREADABLE`.
 - [x] Changed-during-check files are reported as `CHANGED_DURING_CHECK`.
-- [?] Results are persisted in `check_results`.
+- [x] Results are persisted in `check_results`.
 - [x] Integrity check can be cancelled.
-- [ ] Check summary can be loaded after app restart.
+- [ ] Check summary can be loaded after app restart. (History/loading UI is still Phase 7 work.)
 
 ---
 

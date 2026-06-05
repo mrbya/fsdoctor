@@ -1,5 +1,7 @@
 import type { CommandError } from "$lib/types";
 
+const numberFormatter = new Intl.NumberFormat();
+
 export function normalizeCommandError(error: unknown): CommandError {
   const candidate = error as Partial<CommandError>;
 
@@ -39,6 +41,27 @@ export function isPathInsideRoot(
   }
 
   return candidate === root || candidate.startsWith(`${root}/`);
+}
+
+export function formatCount(value: number): string {
+  return numberFormatter.format(value);
+}
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) {
+    return `${formatCount(bytes)} B`;
+  }
+
+  const units = ["KB", "MB", "GB", "TB", "PB"];
+  let value = bytes;
+  let unitIndex = -1;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
 function normalizePathForWarning(path: string): string {

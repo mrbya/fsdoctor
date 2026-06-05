@@ -2,6 +2,8 @@ import { cancelJob, startManifestGeneration } from "$lib/api";
 import type {
   CommandError,
   ManifestGenerationFinishedEvent,
+  ManifestGenerationProgress,
+  ManifestGenerationProgressEvent,
   ManifestGenerationReport,
 } from "$lib/types";
 import { normalizeCommandError } from "$lib/utils/helpers";
@@ -18,32 +20,42 @@ type ManifestGenerationStatus =
 class ManifestGenerationStore {
   jobId = $state<string | null>(null);
   status = $state<ManifestGenerationStatus>("idle");
+  progress = $state<ManifestGenerationProgress | null>(null);
   report = $state<ManifestGenerationReport | null>(null);
   error = $state<CommandError | null>(null);
 
-  private unlisten: (() => void) | null = null;
+  private unlistenProgress: (() => void) | null = null;
+  private unlistenFinished: (() => void) | null = null;
 
   get isActive(): boolean {
     return this.status === "running" || this.status === "cancelling";
   }
 
   async init(): Promise<void> {
-    if (this.unlisten !== null) {
-      return;
+    if (this.unlistenProgress === null) {
+      this.unlistenProgress = await listen<ManifestGenerationProgressEvent>(
+        "manifest-generation-progress",
+        (event) => {
+          this.handleProgressEvent(event.payload);
+        },
+      );
     }
 
-    this.unlisten = await listen<ManifestGenerationFinishedEvent>(
-      "manifest-generation-finished",
-      (event) => {
-        this.handleFinishedEvent(event.payload);
-      },
-    );
+    if (this.unlistenFinished === null) {
+      this.unlistenFinished = await listen<ManifestGenerationFinishedEvent>(
+        "manifest-generation-finished",
+        (event) => {
+          this.handleFinishedEvent(event.payload);
+        },
+      );
+    }
   }
 
   async start(dbPath: string): Promise<void> {
     await this.init();
 
     this.status = "running";
+    this.progress = null;
     this.report = null;
     this.error = null;
 
@@ -75,15 +87,29 @@ class ManifestGenerationStore {
   clear(): void {
     this.jobId = null;
     this.status = "idle";
+    this.progress = null;
     this.report = null;
     this.error = null;
   }
 
   dispose(): void {
-    if (this.unlisten !== null) {
-      this.unlisten();
-      this.unlisten = null;
+    if (this.unlistenProgress !== null) {
+      this.unlistenProgress();
+      this.unlistenProgress = null;
     }
+
+    if (this.unlistenFinished !== null) {
+      this.unlistenFinished();
+      this.unlistenFinished = null;
+    }
+  }
+
+  private handleProgressEvent(event: ManifestGenerationProgressEvent): void {
+    if (event.jobId !== this.jobId) {
+      return;
+    }
+
+    this.progress = event.progress;
   }
 
   private handleFinishedEvent(event: ManifestGenerationFinishedEvent): void {

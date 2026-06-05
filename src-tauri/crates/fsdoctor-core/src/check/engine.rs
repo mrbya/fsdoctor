@@ -1,4 +1,8 @@
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{
+    collections::HashMap,
+    path::Path,
+    sync::{Arc, Mutex},
+};
 
 use tokio::{
     sync::mpsc,
@@ -17,6 +21,22 @@ const CHECK_RESULT_CHANNEL_CAPACITY: usize = 1024;
 
 /// Progress callback type used by the integrity-check engine.
 type ProgressCallback = Arc<dyn Fn(IntegrityCheckProgress) + Send + Sync + 'static>;
+
+/// Shared integrity-check progress state.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+struct IntegrityProgressState {
+    /// Latest current summary.
+    summary: IntegrityCheckSummary,
+
+    /// Latest scan counters.
+    counters: ScanCounters,
+
+    /// Latest current path.
+    current_path: Option<String>,
+
+    /// Results written to the database.
+    results_written: u64,
+}
 
 /// Internal producer result.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,14 +92,16 @@ async fn run_integrity_check_inner(
     }
 
     let project = db.project().await?;
+    let progress_state = Arc::new(Mutex::new(IntegrityProgressState::default()));
 
     emit_progress(
         progress.as_ref(),
+        &progress_state,
         IntegrityCheckPhase::LoadingManifest,
         None,
         IntegrityCheckSummary::default(),
         ScanCounters::default(),
-        0,
+        None,
     );
 
     let manifest_scan_id = db
@@ -98,6 +120,7 @@ async fn run_integrity_check_inner(
     let root_path = project.root_path.clone();
     let producer_cancel_token = cancel_token.clone();
     let producer_progress = progress.clone();
+    let producer_progress_state = Arc::clone(&progress_state);
 
     let producer = task::spawn_blocking(move || {
         produce_check_results(
@@ -107,11 +130,18 @@ async fn run_integrity_check_inner(
             &sender,
             &producer_cancel_token,
             producer_progress.as_ref(),
+            &producer_progress_state,
         )
     });
 
-    let writer_result =
-        consume_check_results(db, receiver, options.db_batch_size, progress.clone()).await;
+    let writer_result = consume_check_results(
+        db,
+        receiver,
+        options.db_batch_size,
+        progress.clone(),
+        Arc::clone(&progress_state),
+    )
+    .await;
 
     if writer_result.is_err() {
         cancel_token.cancel();
@@ -126,6 +156,7 @@ async fn run_integrity_check_inner(
         producer_result,
         writer_result,
         progress.as_ref(),
+        &progress_state,
     )
     .await
 }
@@ -147,6 +178,7 @@ async fn finish_integrity_check(
     producer_result: Result<CheckProducerReport>,
     writer_result: Result<()>,
     progress: Option<&ProgressCallback>,
+    progress_state: &Arc<Mutex<IntegrityProgressState>>,
 ) -> Result<IntegrityCheckReport> {
     match (producer_result, writer_result) {
         (Ok(producer_report), Ok(())) => {
@@ -158,11 +190,12 @@ async fn finish_integrity_check(
 
             emit_progress(
                 progress,
+                progress_state,
                 IntegrityCheckPhase::Finishing,
                 None,
                 producer_report.summary,
                 producer_report.counters,
-                0,
+                None,
             );
 
             db.finish_scan(check_scan_id, status, producer_report.counters, None)
@@ -214,6 +247,7 @@ fn produce_check_results(
     sender: &mpsc::Sender<CheckResultRecord>,
     cancel_token: &CancelToken,
     progress: Option<&ProgressCallback>,
+    progress_state: &Arc<Mutex<IntegrityProgressState>>,
 ) -> Result<CheckProducerReport> {
     let mut counters = ScanCounters::default();
     let mut summary = IntegrityCheckSummary::default();
@@ -239,11 +273,12 @@ fn produce_check_results(
 
         emit_progress(
             progress,
+            progress_state,
             IntegrityCheckPhase::WalkingAndChecking,
             Some(current_path),
             summary,
             counters,
-            0,
+            None,
         );
 
         if sender.blocking_send(result).is_err() {
@@ -257,11 +292,12 @@ fn produce_check_results(
     if !cancelled && !cancel_token.is_cancelled() {
         emit_progress(
             progress,
+            progress_state,
             IntegrityCheckPhase::RecordingMissingEntries,
             None,
             summary,
             counters,
-            0,
+            None,
         );
 
         for expected in expected_entries.into_values() {
@@ -292,6 +328,7 @@ async fn consume_check_results(
     mut receiver: mpsc::Receiver<CheckResultRecord>,
     batch_size: usize,
     progress: Option<ProgressCallback>,
+    progress_state: Arc<Mutex<IntegrityProgressState>>,
 ) -> Result<()> {
     let mut batch = Vec::with_capacity(batch_size);
     let mut results_written = 0_u64;
@@ -308,11 +345,12 @@ async fn consume_check_results(
 
             emit_progress(
                 progress.as_ref(),
+                &progress_state,
                 IntegrityCheckPhase::Writing,
                 None,
                 IntegrityCheckSummary::default(),
                 ScanCounters::default(),
-                results_written,
+                Some(results_written),
             );
         }
     }
@@ -325,11 +363,12 @@ async fn consume_check_results(
 
     emit_progress(
         progress.as_ref(),
+        &progress_state,
         IntegrityCheckPhase::Writing,
         None,
         IntegrityCheckSummary::default(),
         ScanCounters::default(),
-        results_written,
+        Some(results_written),
     );
 
     Ok(())
@@ -607,24 +646,49 @@ fn update_seen_counters(counters: &mut ScanCounters, entry: &FsEntry) {
 /// Emits progress if a callback exists.
 fn emit_progress(
     progress: Option<&ProgressCallback>,
+    progress_state: &Arc<Mutex<IntegrityProgressState>>,
     phase: IntegrityCheckPhase,
     current_path: Option<String>,
     summary: IntegrityCheckSummary,
     counters: ScanCounters,
-    results_written: u64,
+    results_written: Option<u64>,
 ) {
     let Some(callback) = progress else {
         return;
     };
 
-    callback(IntegrityCheckProgress {
-        phase,
-        current_path,
-        summary,
-        files_seen: counters.total_files,
-        dirs_seen: counters.total_dirs,
-        bytes_seen: counters.total_bytes,
-        files_hashed: counters.hashed_files,
-        results_written,
-    });
+    let snapshot = {
+        let mut state = progress_state
+            .lock()
+            .expect("integrity progress state lock should not be poisoned");
+
+        if summary != IntegrityCheckSummary::default() {
+            state.summary = summary;
+        }
+
+        if counters != ScanCounters::default() {
+            state.counters = counters;
+        }
+
+        if current_path.is_some() || phase != IntegrityCheckPhase::Writing {
+            state.current_path = current_path;
+        }
+
+        if let Some(results_written) = results_written {
+            state.results_written = results_written;
+        }
+
+        IntegrityCheckProgress {
+            phase,
+            current_path: state.current_path.clone(),
+            summary: state.summary,
+            files_seen: state.counters.total_files,
+            dirs_seen: state.counters.total_dirs,
+            bytes_seen: state.counters.total_bytes,
+            files_hashed: state.counters.hashed_files,
+            results_written: state.results_written,
+        }
+    };
+
+    callback(snapshot);
 }

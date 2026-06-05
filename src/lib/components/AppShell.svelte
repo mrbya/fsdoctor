@@ -36,12 +36,19 @@
 
 <div class="shell">
   <nav class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">FD</span>
+      <span class="sr-only">FSDoctor navigation</span>
+    </div>
+
     <ul class="nav-list">
       {#each navItems as item (item.id)}
         <li>
           <button
             class="nav-button"
             class:active={activeView === item.id}
+            aria-current={activeView === item.id ? "page" : undefined}
+            aria-label={item.label}
             title={item.label}
             onclick={() => (activeView = item.id)}
           >
@@ -77,7 +84,7 @@
   }
 
   .sidebar {
-    width: 64px;
+    width: 72px;
     flex-shrink: 0;
     background: var(--bg-raised);
     border-right: 1px solid var(--border);
@@ -85,6 +92,27 @@
     flex-direction: column;
     justify-content: space-between;
     padding: 0.5rem 0;
+  }
+
+  .brand {
+    display: grid;
+    place-items: center;
+    gap: var(--space-xs);
+    padding: 0.5rem;
+  }
+
+  .brand-mark {
+    display: inline-grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid color-mix(in srgb, var(--accent), transparent 40%);
+    border-radius: var(--radius-lg);
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    font-size: var(--font-size-sm);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .nav-list {
@@ -130,6 +158,47 @@
     flex: 1;
     overflow-y: auto;
     background: var(--bg);
-    padding: var(--space--sm);
+    padding: var(--space-lg);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (max-width: 48rem) {
+    .shell {
+      grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+      width: 100%;
+      border-right: 0;
+      border-bottom: 1px solid var(--border);
+      justify-content: flex-start;
+      padding: var(--space-sm);
+    }
+
+    .brand {
+      display: none;
+    }
+
+    .nav-list {
+      flex-direction: row;
+      justify-content: space-between;
+      padding: 0;
+    }
+
+    .nav-button {
+      aspect-ratio: auto;
+      min-height: 3rem;
+    }
   }
 </style>

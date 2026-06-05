@@ -111,7 +111,7 @@ pub use model::{
     ProjectId, ScanId, ScanKind, ScanStatus, CURRENT_PROJECT_FORMAT_VERSION,
 };
 // Manifestt
-pub use manifest::generation::generate_manifest;
+pub use manifest::generation::{generate_manifest, generate_manifest_with_progress};
 pub use manifest::model::{
     ManifestGenerationOptions, ManifestGenerationReport, DEFAULT_DB_BATCH_SIZE,
 };

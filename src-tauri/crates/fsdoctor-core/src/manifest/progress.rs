@@ -12,10 +12,13 @@ pub enum ManifestGenerationPhase {
 }
 
 /// Progress snapshot for manifest generation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ManifestGenerationProgress {
     /// Current phase.
     pub phase: ManifestGenerationPhase,
+
+    /// Current path, if available.
+    pub current_path: Option<String>,
 
     /// Files seen.
     pub files_seen: u64,
@@ -37,4 +40,7 @@ pub struct ManifestGenerationProgress {
 
     /// Changed-during-scan entries.
     pub changed_during_scan: u64,
+
+    /// Manifest entries written to the database.
+    pub results_written: u64,
 }

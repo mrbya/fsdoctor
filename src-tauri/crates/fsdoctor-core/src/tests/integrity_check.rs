@@ -1,11 +1,13 @@
+use std::sync::{Arc, Mutex};
 use std::{fs, path::PathBuf};
 
 use sqlx::Row;
 use tempfile::TempDir;
 
 use crate::{
-    generate_manifest, run_integrity_check, CancelToken, CheckResultKind, CreateProjectRequest,
-    Error, IntegrityCheckOptions, ManifestGenerationOptions, ProjectDb, ScanId,
+    generate_manifest, run_integrity_check, run_integrity_check_with_progress, CancelToken,
+    CheckResultKind, CreateProjectRequest, Error, IntegrityCheckOptions, IntegrityCheckPhase,
+    ManifestGenerationOptions, ProjectDb, ScanId,
 };
 
 struct IntegrityCheckFixture {
@@ -243,6 +245,43 @@ async fn missing_completed_manifest_returns_error() -> Result<(), Box<dyn std::e
     .expect_err("running a check without a completed manifest should fail");
 
     assert!(matches!(error, Error::NoCompletedManifest));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn integrity_check_progress_keeps_summary_during_writing(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let fixture = IntegrityCheckFixture::new().await?;
+
+    let snapshots = Arc::new(Mutex::new(Vec::new()));
+    let snapshot_sink = Arc::clone(&snapshots);
+
+    let report = run_integrity_check_with_progress(
+        &fixture.db,
+        IntegrityCheckOptions::default(),
+        &CancelToken::default(),
+        move |progress| {
+            snapshot_sink
+                .lock()
+                .expect("integrity test sink should lock")
+                .push(progress);
+        },
+    )
+    .await?;
+
+    let (results_written, ok_count) = snapshots
+        .lock()
+        .expect("integrity snapshots should lock")
+        .iter()
+        .find(|progress| progress.phase == IntegrityCheckPhase::Writing)
+        .map(|progress| (progress.results_written, progress.summary.ok))
+        .expect("writing progress should be emitted");
+
+    assert!(results_written >= 1);
+    assert!(ok_count >= 1);
+
+    assert_eq!(report.summary.ok, 1);
 
     Ok(())
 }

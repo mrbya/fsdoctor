@@ -1,6 +1,6 @@
 use fsdoctor_core::{
     IntegrityCheckPhase, IntegrityCheckProgress, IntegrityCheckReport, IntegrityCheckSummary,
-    ManifestGenerationReport, Project,
+    ManifestGenerationPhase, ManifestGenerationProgress, ManifestGenerationReport, Project,
 };
 use serde::{Deserialize, Serialize};
 
@@ -173,6 +173,93 @@ pub struct ManifestGenerationFinishedEventDto {
 
     /// Error if the job failed.
     pub error: Option<CommandError>,
+}
+
+/// Manifest generation progress phase.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ManifestGenerationPhaseDto {
+    /// Walking the filesystem and hashing files.
+    WalkingAndHashing,
+
+    /// Writing manifest entries.
+    Writing,
+
+    /// Finalizing the scan.
+    Finishing,
+}
+
+impl From<ManifestGenerationPhase> for ManifestGenerationPhaseDto {
+    fn from(phase: ManifestGenerationPhase) -> Self {
+        match phase {
+            ManifestGenerationPhase::WalkingAndHashing => Self::WalkingAndHashing,
+            ManifestGenerationPhase::Writing => Self::Writing,
+            ManifestGenerationPhase::Finishing => Self::Finishing,
+        }
+    }
+}
+
+/// Manifest generation progress payload.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManifestGenerationProgressDto {
+    /// Current phase.
+    pub phase: ManifestGenerationPhaseDto,
+
+    /// Current path, if available.
+    pub current_path: Option<String>,
+
+    /// Files seen.
+    pub files_seen: u64,
+
+    /// Directories seen.
+    pub dirs_seen: u64,
+
+    /// Bytes seen.
+    pub bytes_seen: u64,
+
+    /// Files hashed.
+    pub files_hashed: u64,
+
+    /// Bytes hashed.
+    pub bytes_hashed: u64,
+
+    /// Unreadable entries.
+    pub unreadable_entries: u64,
+
+    /// Changed-during-scan entries.
+    pub changed_during_scan: u64,
+
+    /// Entries written to the database.
+    pub results_written: u64,
+}
+
+impl From<ManifestGenerationProgress> for ManifestGenerationProgressDto {
+    fn from(progress: ManifestGenerationProgress) -> Self {
+        Self {
+            phase: ManifestGenerationPhaseDto::from(progress.phase),
+            current_path: progress.current_path,
+            files_seen: progress.files_seen,
+            dirs_seen: progress.dirs_seen,
+            bytes_seen: progress.bytes_seen,
+            files_hashed: progress.files_hashed,
+            bytes_hashed: progress.bytes_hashed,
+            unreadable_entries: progress.unreadable_entries,
+            changed_during_scan: progress.changed_during_scan,
+            results_written: progress.results_written,
+        }
+    }
+}
+
+/// Manifest generation progress event payload.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManifestGenerationProgressEventDto {
+    /// Job identifier.
+    pub job_id: String,
+
+    /// Progress snapshot.
+    pub progress: ManifestGenerationProgressDto,
 }
 
 /// Request to start an integrity check.

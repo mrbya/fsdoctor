@@ -81,3 +81,42 @@ async fn open_rejects_non_fsdoctor_sqlite_database() {
 
     assert!(matches!(result, Error::Database(_)));
 }
+
+#[tokio::test]
+async fn open_rejects_unsupported_format_version() {
+    let temp = tempdir().expect("tempdir should be created");
+    let db_path = temp.path().join("backup.fsdoctor.sqlite");
+
+    ProjectDb::create(CreateProjectRequest {
+        db_path: db_path.clone(),
+        name: "Archive".to_owned(),
+        root_path: temp.path().join("backup-root"),
+    })
+    .await
+    .expect("project database should be created");
+
+    let pool = sqlx::SqlitePool::connect_with(
+        sqlx::sqlite::SqliteConnectOptions::new().filename(&db_path),
+    )
+    .await
+    .expect("database should reopen for mutation");
+
+    sqlx::query("UPDATE app_meta SET value = '999' WHERE key = 'fsdoctor.format_version'")
+        .execute(&pool)
+        .await
+        .expect("format version should be updated");
+
+    pool.close().await;
+
+    let result = ProjectDb::open(OpenProjectRequest { db_path })
+        .await
+        .expect_err("unsupported format version should be rejected");
+
+    assert!(matches!(
+        result,
+        Error::UnsupportedFormatVersion {
+            expected: CURRENT_PROJECT_FORMAT_VERSION,
+            actual: 999
+        }
+    ));
+}

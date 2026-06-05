@@ -7,6 +7,9 @@
     component: ProgressPanel,
     tags: ["autodocs"],
     argTypes: {
+      eyebrow: {
+        control: { type: "text" },
+      },
       title: {
         control: { type: "text" },
       },
@@ -20,10 +23,11 @@
 <Story name="Default" />
 <Story name="Simple" args={{ title: "Updating..." }} />
 <Story
-  name="WithDescription"
+  name="WithEyebrow"
   args={{
-    title: "No check running",
+    eyebrow: "Integrity check",
+    title: "Scanning and hashing files",
     description:
-      "Progress will appear here once integrity checks are implemented.",
+      "FSDoctor is checking the current backup tree and keeping the latest counters visible.",
   }}
 />

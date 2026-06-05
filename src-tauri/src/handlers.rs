@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use fsdoctor_core::{
-    generate_manifest, run_integrity_check_with_progress, CancelToken, IntegrityCheckOptions,
-    ManifestGenerationOptions, OpenProjectRequest, ProjectDb,
+    generate_manifest_with_progress, run_integrity_check_with_progress, CancelToken,
+    IntegrityCheckOptions, ManifestGenerationOptions, OpenProjectRequest, ProjectDb,
 };
 use tauri::{AppHandle, Emitter, Manager};
 
@@ -10,7 +10,8 @@ use crate::{
     dto::{
         IntegrityCheckEventStatusDto, IntegrityCheckFinishedEventDto, IntegrityCheckProgressDto,
         IntegrityCheckProgressEventDto, IntegrityCheckReportDto, ManifestGenerationEventStatusDto,
-        ManifestGenerationFinishedEventDto, ManifestGenerationReportDto,
+        ManifestGenerationFinishedEventDto, ManifestGenerationProgressDto,
+        ManifestGenerationProgressEventDto, ManifestGenerationReportDto,
     },
     error::CommandError,
     state::AppState,
@@ -24,7 +25,14 @@ pub async fn run_manifest_generation_job(
     db_batch_size: usize,
     cancel_token: CancelToken,
 ) {
-    let result = run_manifest_generation(db_path, db_batch_size, &cancel_token).await;
+    let result = run_manifest_generation(
+        app.clone(),
+        job_id.clone(),
+        db_path,
+        db_batch_size,
+        &cancel_token,
+    )
+    .await;
     let payload = match result {
         Ok(report) => {
             let status = if report.cancelled {
@@ -112,16 +120,28 @@ pub async fn run_integrity_check_job(
 
 /// Opens the DB and runs core manifest generation.
 async fn run_manifest_generation(
+    app: AppHandle,
+    job_id: String,
     db_path: PathBuf,
     db_batch_size: usize,
     cancel_token: &CancelToken,
 ) -> fsdoctor_core::Result<fsdoctor_core::ManifestGenerationReport> {
     let db = ProjectDb::open(OpenProjectRequest { db_path }).await?;
 
-    generate_manifest(
+    generate_manifest_with_progress(
         &db,
         ManifestGenerationOptions { db_batch_size },
         cancel_token,
+        move |progress| {
+            let payload = ManifestGenerationProgressEventDto {
+                job_id: job_id.clone(),
+                progress: ManifestGenerationProgressDto::from(progress),
+            };
+
+            if let Err(error) = app.emit("manifest-generation-progress", payload) {
+                eprintln!("failed to emit manifest generation progress event: {error}");
+            }
+        },
     )
     .await
 }

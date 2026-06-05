@@ -127,6 +127,50 @@ export type ManifestGenerationFinishedEvent = {
 };
 
 /**
+ * Manifest generation phase.
+ */
+export type ManifestGenerationPhase =
+  | "walking_and_hashing"
+  | "writing"
+  | "finishing";
+
+/**
+ * Manifest generation progress payload.
+ */
+export type ManifestGenerationProgress = {
+  /** Current phase. */
+  phase: ManifestGenerationPhase;
+  /** Current path, if available. */
+  currentPath: string | null;
+  /** Files seen. */
+  filesSeen: number;
+  /** Directories seen. */
+  dirsSeen: number;
+  /** Bytes seen. */
+  bytesSeen: number;
+  /** Files hashed. */
+  filesHashed: number;
+  /** Bytes hashed. */
+  bytesHashed: number;
+  /** Unreadable entries. */
+  unreadableEntries: number;
+  /** Changed-during-scan entries. */
+  changedDuringScan: number;
+  /** Entries written to the database. */
+  resultsWritten: number;
+};
+
+/**
+ * Event emitted while manifest generation is running.
+ */
+export type ManifestGenerationProgressEvent = {
+  /** Job identifier. */
+  jobId: string;
+  /** Progress snapshot. */
+  progress: ManifestGenerationProgress;
+};
+
+/**
  * Request to start an integrity check.
  */
 export type StartIntegrityCheckRequest = {
