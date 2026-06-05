@@ -12,7 +12,7 @@ pub enum IntegrityCheckPhase {
     /// Recording manifest entries that are missing from the current tree.
     RecordingMissingEntries,
 
-    /// Writing check results to `SQLite.
+    /// Writing check results to `SQLite`.
     Writing,
 
     /// Finalizing scan status.

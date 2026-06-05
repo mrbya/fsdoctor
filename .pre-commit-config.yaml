@@ -21,21 +21,10 @@ repos:
 
   - repo: local
     hooks:
-      - id: pre-commit-rs
-        name: pre commit formating, linter checks and tests for rust sources
-        language: unsupported
-        entry: just pre-commit-rs
-        pass_filenames: false
-        files: >
-          (?x)^(
-            src-tauri/.*\.rs|
-            justfile|
-          )$
-
       - id: pre-commit-js
         name: pre commit formating, linter checks and tests for frontend sources
         language: unsupported
-        entry: just pre-commit-js
+        entry: just pre-commit-hook-js
         pass_filenames: false
         files: >
           (?x)^(
@@ -46,4 +35,15 @@ repos:
             pnpm.*\.json|
             justfile|
             \.prettierrc
+          )$
+
+      - id: pre-commit-rs
+        name: pre commit formating, linter checks and tests for rust sources
+        language: unsupported
+        entry: just pre-commit-hook-rs
+        pass_filenames: false
+        files: >
+          (?x)^(
+            src-tauri/.*\.rs|
+            justfile|
           )$

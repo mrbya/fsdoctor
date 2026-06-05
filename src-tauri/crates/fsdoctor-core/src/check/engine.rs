@@ -104,9 +104,9 @@ async fn run_integrity_check_inner(
             check_scan_id,
             &root_path,
             expected_entries,
-            sender,
+            &sender,
             &producer_cancel_token,
-            producer_progress,
+            producer_progress.as_ref(),
         )
     });
 
@@ -211,9 +211,9 @@ fn produce_check_results(
     check_scan_id: ScanId,
     root_path: &Path,
     mut expected_entries: HashMap<String, ExpectedManifestEntry>,
-    sender: mpsc::Sender<CheckResultRecord>,
+    sender: &mpsc::Sender<CheckResultRecord>,
     cancel_token: &CancelToken,
-    progress: Option<ProgressCallback>,
+    progress: Option<&ProgressCallback>,
 ) -> Result<CheckProducerReport> {
     let mut counters = ScanCounters::default();
     let mut summary = IntegrityCheckSummary::default();
@@ -230,7 +230,7 @@ fn produce_check_results(
 
         let result = classify_current_entry(
             check_scan_id,
-            entry,
+            &entry,
             expected,
             &mut counters,
             &mut summary,
@@ -238,7 +238,7 @@ fn produce_check_results(
         )?;
 
         emit_progress(
-            progress.as_ref(),
+            progress,
             IntegrityCheckPhase::WalkingAndChecking,
             Some(current_path),
             summary,
@@ -256,7 +256,7 @@ fn produce_check_results(
 
     if !cancelled && !cancel_token.is_cancelled() {
         emit_progress(
-            progress.as_ref(),
+            progress,
             IntegrityCheckPhase::RecordingMissingEntries,
             None,
             summary,
@@ -338,13 +338,13 @@ async fn consume_check_results(
 /// Classifies one current filesystem entry against an optional expected entry.
 fn classify_current_entry(
     check_scan_id: ScanId,
-    entry: FsEntry,
+    entry: &FsEntry,
     expected: Option<ExpectedManifestEntry>,
     counters: &mut ScanCounters,
     summary: &mut IntegrityCheckSummary,
     cancel_token: &CancelToken,
 ) -> Result<CheckResultRecord> {
-    update_seen_counters(counters, &entry);
+    update_seen_counters(counters, entry);
 
     let relative_path = entry.relative_path.as_str().to_owned();
     let actual_size = entry
@@ -352,7 +352,7 @@ fn classify_current_entry(
         .as_ref()
         .and_then(|metadata| metadata.size_bytes);
 
-    match &entry.status {
+    match entry.status.clone() {
         FsEntryStatus::Unreadable { message } => {
             counters.unreadable_entries = counters.unreadable_entries.saturating_add(1);
             summary.unreadable = summary.unreadable.saturating_add(1);
@@ -367,7 +367,7 @@ fn classify_current_entry(
                 actual_size_bytes: actual_size,
                 expected_hash: expected.as_ref().and_then(|value| value.hash),
                 actual_hash: None,
-                message: Some(message.clone()),
+                message: Some(message),
             });
         }
         FsEntryStatus::Skipped { reason } => {
@@ -455,7 +455,7 @@ fn classify_current_entry(
 /// Classifies a regular file entry.
 fn classify_file_entry(
     check_scan_id: ScanId,
-    entry: FsEntry,
+    entry: &FsEntry,
     expected: ExpectedManifestEntry,
     actual_size: Option<u64>,
     counters: &mut ScanCounters,

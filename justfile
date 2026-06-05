@@ -128,6 +128,19 @@ icons:
 dev *FLAGS:
     cargo tauri dev {{FLAGS}}
 
+# Builds and bundles frontend sources.
+build-js:
+    pnpm build
+
+# Builds backend sources.
+[working-directory: 'src-tauri']
+build-rs *FLAGS:
+    cargo build --workspace {{FLAGS}}
+
+# Build app.
+build:
+    cargo tauri build
+
 # Build app release setup for windows.
 build-windows:
     cargo tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc
@@ -221,25 +234,35 @@ ci-docs:
     mv ./docs-page ./public
 
 # Non mutating pre-commit recipe for frontend source pre commit hooks.
-pre-commit-js:
+pre-commit-hook-js:
     @just thorough-check-js
     @just unused-js
     @just audit-js
     @just test-js
 
+# Pre-commit recipe for frontend js/ts/svelte sources.
+pre-commit-js:
+    @just fmt-js
+    @just pre-commit-hook-js
+
 # Non mutating pre-commit recipe for backend source pre commit hooks.
-pre-commit-rs:
+pre-commit-hook-rs:
     # @just precache
     @just thorough-check-rs
     @just unused-rs
     @just audit-rs
     @just test-rs
 
+# Pre-commit recipe for backend rust sources.
+pre-commit-rs:
+    @just fmt-rs
+    @just pre-commit-hook-rs
+
 # Runs formating, tests and checks necessary before a commit.
 pre-commit:
     @just fmt
-    @just pre-commit-js
-    @just pre-commit-rs
+    @just pre-commit-hook-js
+    @just pre-commit-hook-rs
     @just index
 
 # Runs checks and tests run by ci.
