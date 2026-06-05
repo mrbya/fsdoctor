@@ -36,11 +36,6 @@
 
 <div class="shell">
   <nav class="sidebar">
-    <div class="brand">
-      <span class="brand-mark">FD</span>
-      <span class="sr-only">FSDoctor navigation</span>
-    </div>
-
     <ul class="nav-list">
       {#each navItems as item (item.id)}
         <li>
@@ -94,27 +89,6 @@
     padding: 0.5rem 0;
   }
 
-  .brand {
-    display: grid;
-    place-items: center;
-    gap: var(--space-xs);
-    padding: 0.5rem;
-  }
-
-  .brand-mark {
-    display: inline-grid;
-    place-items: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    border: 1px solid color-mix(in srgb, var(--accent), transparent 40%);
-    border-radius: var(--radius-lg);
-    color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
-    font-size: var(--font-size-sm);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
   .nav-list {
     list-style: none;
     display: flex;
@@ -161,18 +135,6 @@
     padding: var(--space-lg);
   }
 
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
   @media (max-width: 48rem) {
     .shell {
       grid-template-columns: 1fr;
@@ -184,10 +146,6 @@
       border-bottom: 1px solid var(--border);
       justify-content: flex-start;
       padding: var(--space-sm);
-    }
-
-    .brand {
-      display: none;
     }
 
     .nav-list {
