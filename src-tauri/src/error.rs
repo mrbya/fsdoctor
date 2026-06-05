@@ -18,6 +18,9 @@ pub enum CommandErrorKind {
 
     /// File/command not found.
     NotFound,
+
+    /// No completed manifest found in project DB.
+    NoCompletedManifest,
 }
 
 /// Errors returned by tauri commands.
@@ -69,6 +72,11 @@ impl From<fsdoctor_core::Error> for CommandError {
                 details: Some(format!(
                     "Expected format version {expected}, found {actual}."
                 )),
+            },
+            fsdoctor_core::Error::NoCompletedManifest => Self {
+                kind: CommandErrorKind::NoCompletedManifest,
+                message: "No completed integrity record exists for this project yet.".to_owned(),
+                details: Some("Create a manifest before running an integrity check.".to_owned()),
             },
             other => Self {
                 kind: CommandErrorKind::InternalError,
