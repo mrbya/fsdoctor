@@ -1,0 +1,134 @@
+import { listen } from "@tauri-apps/api/event";
+
+import { cancelJob, startIntegrityCheck } from "$lib/api";
+import type {
+  CommandError,
+  IntegrityCheckFinishedEvent,
+  IntegrityCheckProgress,
+  IntegrityCheckProgressEvent,
+  IntegrityCheckReport,
+} from "$lib/types";
+import { normalizeCommandError } from "$lib/utils/helpers";
+
+type IntegrityCheckStatus =
+  | "idle"
+  | "running"
+  | "cancelling"
+  | "completed"
+  | "cancelled"
+  | "failed";
+
+class IntegrityCheckStore {
+  jobId = $state<string | null>(null);
+  status = $state<IntegrityCheckStatus>("idle");
+  progress = $state<IntegrityCheckProgress | null>(null);
+  report = $state<IntegrityCheckReport | null>(null);
+  error = $state<CommandError | null>(null);
+
+  private unlistenProgress: (() => void) | null = null;
+  private unlistenFinished: (() => void) | null = null;
+
+  get isActive(): boolean {
+    return this.status === "running" || this.status === "cancelling";
+  }
+
+  async init(): Promise<void> {
+    if (this.unlistenProgress === null) {
+      this.unlistenProgress = await listen<IntegrityCheckProgressEvent>(
+        "integrity-check-progress",
+        (event) => {
+          this.handleProgressEvent(event.payload);
+        },
+      );
+    }
+
+    if (this.unlistenFinished === null) {
+      this.unlistenFinished = await listen<IntegrityCheckFinishedEvent>(
+        "integrity-check-finished",
+        (event) => {
+          this.handleFinishedEvent(event.payload);
+        },
+      );
+    }
+  }
+
+  async start(dbPath: string): Promise<void> {
+    await this.init();
+
+    this.status = "running";
+    this.progress = null;
+    this.report = null;
+    this.error = null;
+
+    try {
+      const started = await startIntegrityCheck({ dbPath });
+      this.jobId = started.jobId;
+    } catch (error) {
+      this.status = "failed";
+      this.error = normalizeCommandError(error);
+      this.jobId = null;
+    }
+  }
+
+  async cancel(): Promise<void> {
+    if (this.jobId === null) {
+      return;
+    }
+
+    this.status = "cancelling";
+
+    try {
+      await cancelJob({ jobId: this.jobId });
+    } catch (error) {
+      this.status = "failed";
+      this.error = normalizeCommandError(error);
+    }
+  }
+
+  clear(): void {
+    this.jobId = null;
+    this.status = "idle";
+    this.progress = null;
+    this.report = null;
+    this.error = null;
+  }
+
+  dispose(): void {
+    if (this.unlistenProgress !== null) {
+      this.unlistenProgress();
+      this.unlistenProgress = null;
+    }
+
+    if (this.unlistenFinished !== null) {
+      this.unlistenFinished();
+      this.unlistenFinished = null;
+    }
+  }
+
+  private handleProgressEvent(event: IntegrityCheckProgressEvent): void {
+    if (event.jobId !== this.jobId) {
+      return;
+    }
+
+    this.progress = event.progress;
+  }
+
+  private handleFinishedEvent(event: IntegrityCheckFinishedEvent): void {
+    if (event.jobId !== this.jobId) {
+      return;
+    }
+
+    this.report = event.report;
+    this.error = event.error;
+
+    if (event.status === "completed") {
+      this.status = "completed";
+    } else if (event.status === "cancelled") {
+      this.status = "cancelled";
+    } else {
+      this.status = "failed";
+    }
+  }
+}
+
+export const integrityCheckStore = new IntegrityCheckStore();
